@@ -9,9 +9,17 @@ from	wtools import *
 def	request (sid, svc, params = None):
 	if not params:	params = ''
 	url = r"http://wialon.rnc52.ru/wialon/ajax.html?sid=%s&svc=%s&params={%s}" % (sid, svc, params)
+#	try:
 	res = json.load(urllib.urlopen(url))
 	if not res:	print url
+#	elif type(res) == list:
+#		print res
+	elif type(res) == dict and res.has_key('error'):
+		print url
+		perror (res['error'])
 	return res
+#	except:
+#		print "except: request", url
 
 def	rPOST():
 	params = urllib.url_encode({'spam': 1, 'eggs': 2, 'text': "ТЕКСТ TEXT"})
@@ -55,26 +63,42 @@ def	plmsg (lmsg, tpos):
 	else:	return  "\tlmsg %s" % time.strftime("%Y-%m-%d %T", time.localtime(lmsg['t']))
 	ppp (lmsg)
 
-def	create_unit (sid, name = 'ZZZ_1234', creatorId = 17, hwTypeId = 96266):
+def	create_unit (sid, name = 'ZZZ_1234', creatorId = 17, hwTypeId = 14):
 	# https://sdk.wialon.com/wiki/ru/local/remoteapi1604/codesamples/update_item#udalenie_obekta
 	params={
 		"creatorId": creatorId,
-		"name": name,
+		"name": "unit",	#name,
 		"hwTypeId": hwTypeId,
 		"dataFlags":1
 	}
 #	help (json)
-	print jsqn.string(params)
-#	res = request (sid, svss['create_unit'], "'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':%s,'from':0,'to':0" % flags)
+	sprm = json.dumps(params)
+	print type(sprm)
+	print "[%s]" % json.dumps(params)
+	res = request (sid, svss['create_unit'], sprm[1:-1])
+	ppp(res)
 	
 svss = {
 	'curr_account': 'core/get_account_data',	# Информация о текущей учетной записи type {1|2} ( минимальная | детальная )
+	'get_hw_types':	'core/get_hw_types',		# можно получить все доступные типы оборудования
 	'search_items': 'core/search_items',		# Поиск объектов (элементов) по критериям
 	'create_unit':	'core/create_unit',		# Создать объект (элемент)
 	'delete_item':	'item/delete_item',		# Удалить объект (элемент)
-	'export_wlp': 'exchange/export_json',
-	'token_list': 'token/list',
+	'export_wlp':	'exchange/export_json',
+	'token_list':	'token/list',
 	}
+
+def	get_hw_types(sid):
+	# type – значения: auto, tracker, mobile, soft 
+	# "filterType":<text>,"filterValue":[<text>|<uint>], "includeType":<bool>}
+	params = { "filterType":"type", "filterValue":["auto"], "includeType": True }
+	for vtype in ["auto", "mobile", "soft"]:	# "tracker"]:
+		params["filterValue"] = [vtype]
+		res = request (sid, svss['get_hw_types'], json.dumps(params)[1:-1])
+		print "filterValue:", params["filterValue"]
+		for r in res:
+			print "\t%4d\t%s" % (r['id'], r['name'])
+#		ppp(res)
 
 def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
 	res = request (sid, svss['search_items'], "'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':%s,'from':0,'to':0" % flags)
@@ -82,21 +106,30 @@ def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
 	
 if __name__ == "__main__":
 	sess = {}
+	sess = login()
+	sid = sess['eid']
+	get_hw_types(sid)
+	create_unit (sid)
+	'''
 	try:
 		for uname in usr2token.keys():
 			print "#"*33, uname
 			sess = login()
 			sid = sess['eid']
+			break
 		#	get_autos (sid)
 			get_user (sid)
 			logout(sid)
-		create_unit (sid, 'ZZZ', 17)
+		get_hw_types(sid)
+		res = create_unit (sid, 'ZZZ', 17)
+		ppp(res)
 	except:
+		print 'except:'
 		if sess.has_key('error'):
 			perror(sess['error'])
 		else:	print sess
-		
-		'''
+	'''	
+	'''
 	if sess and sess.has_key('eid'):
 		sid = sess['eid']
 #		ppp(sess)
@@ -137,4 +170,4 @@ if __name__ == "__main__":
 		logout(sid)
 	else:
 		ppp(sess)
-		'''
+	'''

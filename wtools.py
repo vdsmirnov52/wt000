@@ -71,6 +71,8 @@ usr2token = {
 	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af891F531BAA376794D25274B3EAD44CAF9BACCD247",
 	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c2A1C15592645215DBA63B6D2A21AE9A379DB51D75",
 	}
+#2017/01/19 12:27:54:196: Wialon login - token: '91F531BAA376794D25274B3EAD44CAF9BACCD247'; user: 'wialon'; host: '212.193.103.20'; service: 'wialon.rnc52.ru'; app: ''
+#2017/01/19 12:28:04:027: storage_messages_cache::msgs_thread('02abba2f426fbcceb38e0591075c3101'): previous minute intensity was 91 messages
 
 url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'1d5a4a6ab2bde440204e6bd1d53b3af891F531BAA376794D25274B3EAD44CAF9BACCD247'}"
 def	login (token = None):
