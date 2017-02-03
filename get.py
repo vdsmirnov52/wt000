@@ -28,23 +28,38 @@ def	rPOST():
 
 def	get_autos (sid):
 	""" найти все машины	"""
-	res = request (sid, svss['search_items'], "'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':1025,'from':0,'to':0")
+#	res = request (sid, svss['search_items'], "'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':1033,'from':0,'to':0")
+	res = request (sid, svss['search_items'], "'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':-1,'from':0,'to':0")
 	if res:
+	#	ppp(res)
+	#	return
 		if res.has_key('error'):
 			print "error:", res['error']
 		elif res.has_key('items') and res['items']:
+	#		ppp(res['items'])
+	#		return
 			print "Len res['items']", len(res['items'])
 			j = 0
 			for item in  res['items']:
 				j += 1
+				print "%6d" % item['id'],
 				print item['nm'].encode('UTF-8'), ppos(item['pos']),
 				if item['pos']:
 					tpos = item['pos']['t']
 				else:	tpos = None
 				if item.has_key('lmsg'):
-					print plmsg(item['lmsg'], tpos)
-				else:	print ""
+					print plmsg(item['lmsg'], tpos),
+				if item.has_key('aflds') and item['aflds']:
+					print "\taflds[",
+					for k in item['aflds'].keys():
+					#	print item['aflds'][k] ,
+						print "%s: '%s'" % (item['aflds'][k]['n'], item['aflds'][k]['v']) ,
+					print "]",
+				#	ppp(item['aflds'], 'aflds')
+				print ""
 		#		ppp (item, "%3d" %j)
+		elif res.has_key('afields') and res['afields']:
+				print res['afields']
 		else:
 			ppp(res)
 	else:	print res
@@ -63,19 +78,21 @@ def	plmsg (lmsg, tpos):
 	else:	return  "\tlmsg %s" % time.strftime("%Y-%m-%d %T", time.localtime(lmsg['t']))
 	ppp (lmsg)
 
-def	create_unit (sid, name = 'ZZZ_1234', creatorId = 17, hwTypeId = 14):
+def	create_unit (sid, name = 'ZZZ_1234', creatorId = 31, hwTypeId = 14):
 	# https://sdk.wialon.com/wiki/ru/local/remoteapi1604/codesamples/update_item#udalenie_obekta
 	params={
 		"creatorId": creatorId,
-		"name": "unit",	#name,
-		"hwTypeId": hwTypeId,
-		"dataFlags":1
+		"name": name,
+		"hwTypeId": "%d" % 9,	#hwTypeId,
+		"dataFlags":257
 	}
 #	help (json)
+#	http://wialon.rnc52.ru/wialon/ajax.html?svc=core/create_unit&params={%22creatorId%22:31,%22name%22:%22test_sdk%22,%22hwTypeId%22:%229%22,%22dataFlags%22:257}&sid=002b3269fd1e9468b8c47f0c6443fdb2
 	sprm = json.dumps(params)
-	print type(sprm)
+	print type(sprm), urllib.quote(sprm[1:-1].replace(' ', ''), ':,')
 	print "[%s]" % json.dumps(params)
-	res = request (sid, svss['create_unit'], sprm[1:-1])
+#	res = request (sid, svss['create_unit'], urllib.quote(sprm[1:-1].replace(' ', ''), ':,'))	#urllib.urlencode(sprm[1:-1]))
+	res = request (sid, svss['create_unit'], "%22creatorId%22:31,%22name%22:%22test_QQQ%22,%22hwTypeId%22:%229%22,%22dataFlags%22:257")
 	ppp(res)
 	
 svss = {
@@ -85,6 +102,7 @@ svss = {
 	'create_unit':	'core/create_unit',		# Создать объект (элемент)
 	'delete_item':	'item/delete_item',		# Удалить объект (элемент)
 	'export_wlp':	'exchange/export_json',
+	'import_wlp':	'exchange/import_json',
 	'token_list':	'token/list',
 	}
 
@@ -94,11 +112,19 @@ def	get_hw_types(sid):
 	params = { "filterType":"type", "filterValue":["auto"], "includeType": True }
 	for vtype in ["auto", "mobile", "soft"]:	# "tracker"]:
 		params["filterValue"] = [vtype]
+		print ">>><%s>" % json.dumps(params)
 		res = request (sid, svss['get_hw_types'], json.dumps(params)[1:-1])
 		print "filterValue:", params["filterValue"]
 		for r in res:
 			print "\t%4d\t%s" % (r['id'], r['name'])
 #		ppp(res)
+
+
+sppp = '{"afields":[{"id":1,"n":"inn","v":"520000000123"}],"fields":[],"general":{"hw":"WiaTag","n":"TestPhone","ph":"","ph2":"","psw":"","uid":"864359028299999","uid2":""},"hwConfig":{"fullData":1,"hw":"WiaTag","params":{}},"icon":{"lib":"3","url":"Z_11.png"},"imgRot":"0","mu":0,"type":"avl_unit","version":"b4"}'
+def	send_post (sid, svc):
+	url = r"http://wialon.rnc52.ru/wialon/ajax.html?sid=%s&svc=%s" % (sid, svc)
+        res = json.load(urllib.urlopen(url, sppp))
+	ppp(res)
 
 def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
 	res = request (sid, svss['search_items'], "'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':%s,'from':0,'to':0" % flags)
@@ -106,11 +132,18 @@ def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
 	
 if __name__ == "__main__":
 	sess = {}
-	sess = login()
+	sess = login(usr2token['wialon'])
 	sid = sess['eid']
-	get_hw_types(sid)
-	create_unit (sid)
+	get_autos (sid)
+#	get_hw_types(sid)
 	'''
+	UUU = 'http://wialon.rnc52.ru/wialon/ajax.html?svc=core/create_unit&params={"creatorId":31,"name":"test_LLL","hwTypeId":"9","dataFlags":257}&sid=' + sid
+	print "SID", UUU
+	res = json.load(urllib.urlopen(UUU))
+	ppp(res, "RES")
+	create_unit (sid) ### ???
+	send_post (sid, svss['import_wlp'])
+#	request (sid, svss['import_wlp'], params = sppp[1:-1])
 	try:
 		for uname in usr2token.keys():
 			print "#"*33, uname

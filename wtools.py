@@ -6,6 +6,12 @@ import	urllib
 import	json
 
 def	ppp(obj, oname = 'objName', level = 0):
+	if type(obj) == dict and obj.has_key('error'):
+		print obj,
+		try:
+			print err_dict[obj['error']]
+		except:	print "Код неизвестен"
+		return
 	if oname != '':
 		print "\t"*level, "'%s':" % oname ,
 	if type(obj) == dict:
@@ -40,9 +46,9 @@ def	ppp(obj, oname = 'objName', level = 0):
 		else:	print "\t"*level, obj
 		'''
 	elif type(obj) == type(u''):
-		print "u'%s'" % obj.encode('UTF-8')
+		print 'u"%s"' % obj.encode('UTF-8')
 	elif type(obj) == type(''):
-		print "'%s'" % obj
+		print '"%s"' % obj
 	else:
 		print obj
 err_dict = {
@@ -67,12 +73,21 @@ def	perror (ecod):
 		
 sess =	None
 account =	None
-usr2token = {
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af891F531BAA376794D25274B3EAD44CAF9BACCD247",
-	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c2A1C15592645215DBA63B6D2A21AE9A379DB51D75",
+'''
+usr2token = {	# //wialon.rnc52.ru
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8192DDC96D305E8D3DF46DB94C181C5CCC475A14D",
+	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c20CC0FBBD482F98A98F12DE39D18B65B26FC92C7A",
 	}
-#2017/01/19 12:27:54:196: Wialon login - token: '91F531BAA376794D25274B3EAD44CAF9BACCD247'; user: 'wialon'; host: '212.193.103.20'; service: 'wialon.rnc52.ru'; app: ''
-#2017/01/19 12:28:04:027: storage_messages_cache::msgs_thread('02abba2f426fbcceb38e0591075c3101'): previous minute intensity was 91 messages
+'''
+usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8675A1AAA19667E045F5188C6A642D87C90FAF956",
+	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6",
+	}
+# wialon	http://wialon.rnc52.ru/login.html?access_token=1d5a4a6ab2bde440204e6bd1d53b3af8192DDC96D305E8D3DF46DB94C181C5CCC475A14D&svc_error=0
+# V.Smirnov	http://wialon.rnc52.ru/login.html?svc_error=7&access_token=c5a76d06f77af04aa4c9fa0699d465c20CC0FBBD482F98A98F12DE39D18B65B26FC92C7A&svc_error=0
+
+# wialon	http://test-wialon.rnc52.ru/login.html?access_token=1d5a4a6ab2bde440204e6bd1d53b3af8675A1AAA19667E045F5188C6A642D87C90FAF956&svc_error=0
+# V.Smirnov	http://test-wialon.rnc52.ru/login.html?access_token=c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6&svc_error=0
 
 url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'1d5a4a6ab2bde440204e6bd1d53b3af891F531BAA376794D25274B3EAD44CAF9BACCD247'}"
 def	login (token = None):
