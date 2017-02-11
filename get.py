@@ -127,15 +127,35 @@ def	send_post (sid, svc):
 	ppp(res)
 
 def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
+	print "#"*33, "get_user"
 	res = request (sid, svss['search_items'], "'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':%s,'from':0,'to':0" % flags)
 	ppp(res)
 	
 if __name__ == "__main__":
-	sess = {}
-	sess = login(usr2token['wialon'])
+#	sess = {}
+#	sess = login(usr2token['wialon'])
+	sess = login(usr2token['V.Smirnov'])
 	sid = sess['eid']
 	get_autos (sid)
 #	get_hw_types(sid)
+#	get_user (sid)
+	print "#"*33, '"user_namt": "%s"' % sess["user"]["nm"]
+	for u in sess["user"]["prp"].keys():
+		if u == "monugv":
+			print sess["user"]["prp"][u]
+		if u == "monugr":
+#			print sess["user"]["prp"][u]
+			monugr = json.loads(sess["user"]["prp"][u])
+#			print monugr
+			for g in monugr.keys():
+				print g, ">\t", monugr[g]
+				if int(g) == 0:	continue
+				res = request (sid, 'core/search_item', '"id":%s,"flags":1025' % g)
+				if res.has_key('item'):
+				#	ppp(res['item'], g)
+					print "%s >\t nm:'%s', id: %d" % (g, res['item']['nm'], res['item']['id'])
+				else:	ppp(res, g)
+
 	'''
 	UUU = 'http://wialon.rnc52.ru/wialon/ajax.html?svc=core/create_unit&params={"creatorId":31,"name":"test_LLL","hwTypeId":"9","dataFlags":257}&sid=' + sid
 	print "SID", UUU
