@@ -4,9 +4,9 @@
 import	os, sys, time
 import	urllib
 import	json
-from	wtools import *
-from	mobph_wlp import *
-from	auto_wlp import *
+#from	wtools import *
+#from	mobph_wlp import *
+#from	auto_wlp import *
 
 import	urllib2, random, mimetypes
 
@@ -121,6 +121,10 @@ def	send_post (pdict = None, pfile = None):
 
 DEBUG = False
 URL =	r"http://test-wialon.rnc52.ru/wialon/ajax.html"
+usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8675A1AAA19667E045F5188C6A642D87C90FAF956",
+	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6",
+	}
 
 if __name__ == "__main__":
 	# Login
@@ -136,16 +140,16 @@ if __name__ == "__main__":
 		print "User: %s SID: %s UsId: %d" % (usr, sid, usid)
 		print "="*44
 		data ={'sid': sid}
-		'''
 		data['svc'] = 'core/get_hw_types'
 		data['params'] = { "filterType":"type", "filterValue":["mobile"], "includeType": True }
 		res = send_post(data)
 		ppp(res, data['svc'])
-		print "="*44
 		'''
+		print "="*44
+		''
 		data['svc'] = 'exchange/import_json'
 		res = send_post(data, r'wlp/test_ph1.wlp')
-		'''
+		''
 		data['svc'] = 'core/create_unit'
 		data['params'] = {"creatorId": usid,"name":"test_LLL","hwTypeId":"9","dataFlags":"257"}
 		res = send_post(data)
