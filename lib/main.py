@@ -28,11 +28,18 @@ jsLocal =  """<script type='text/javascript'>
 	function	set_shadow (shstat) {	$.ajax({data: 'shstat='+ shstat +'&' +$('form').serialize()});	}
 	function	add_row(tabname) {	$.ajax({data: 'shstat=add_row&table='+ tabname +'&' +$('form').serialize()});}
 	function	set_message(txt) {	$('#message').html(txt);}
-	
 	function	set_val(id, val) {
 		alert ('Id: ' +id +' Val: ' + val);
 		$(id).val(val)
 	}
+function	check_form_auto() {
+	var	 messg = '';
+	if ($('#name').val() == '')	messg += '\\tОтсутствует Наименование объекта!\\n';
+	if ($('#hwTypeId').val() == '')	messg += '\\tОтсутствует hwTypeId объекта!\\n';
+//	if ($('#creatorId').val() == '')	messg += '\\tОтсутствует creatorId объекта!\\n';
+	if (messg != '') {	alert ('Ошибки в заполнении формы:\\n' +messg);	return;	}
+	else {	alert('Ok! creatorId: ' + $('#creatorId').val()); set_shadow('create_unit');	}
+}
 /////////////////////////////////////////////
 function msg(text) { $("#log").prepend(text + "<br/>"); }
 var	users_token = [
@@ -62,14 +69,46 @@ def	out_head (title = None):
 	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=25%>"
 	if title:	print "<span class='tit'>", title, "</span>"
 	print	"""<td width=700>User: <select name='users"' id="users" onchange="sel_users()"><option></option></select> <span id='ttoken'>ttoken</span></td>"""
-	print	"<td>wuser: <b id='wuser'></b></td><td>HW:<span id='hw_types'></span></td><td></td>"
+	print	"<td>wUser: <b id='wuser'></b></td>"	#<td>HW:<span id='hw_types'></span></td><td></td>"
 	print	"<td align=right>"
-	print	"""<input type='button' class='butt' value='TEST get_hw_types' onclick="set_shadow('get_hw_types');" />"""
+	print	"""<input type='button' class='butt' value='check_form_auto' onclick=" check_form_auto();" />"""
+	print	"""<input type='button' class='butt' value='TEST get_users' onclick="set_shadow('get_users');" />"""
+#	print	"""<input type='button' class='butt' value='TEST get_hw_types' onclick="set_shadow('get_hw_types');" />"""
 	print	"""<input type='button' class='butt' value='Connect' onclick="set_shadow('connect');" />"""
 	print	"""<input type='button' class='butt' value='Exit' onclick="set_shadow('exit');" />"""
 	print	"</td>"
 	print	"""<td align=right><img onclick="document.myForm.submit();" title="Обновить" src="../img/reload3.png"></td>"""
 	print	"</tr></table></div>"
+
+def	out_form_auto ():
+	def_vals = {'creatorId':17, 'dataFlags':4294967295, }
+	pars_obj = {
+	#'- Основное',
+	'name': 'Имя', 'hwTypeId': 'Тип устройства', 'creatorId': 'Создатель', 'uid': 'Уникальный ID', 'ph0': 'Телефонный номер', 'passwd': 'Пароль доступа к объекту', #'dataFlags',
+	#'- Характеристики',
+	'tts': 'Тип Т/С', 'tvin': 'VIN', 'treg': 'Регистрационный знак', 'tmark': 'Марка', 'tmod': 'Модель', 'tyar': 'Год выпуска',
+	#'- Организация', 
+	'oinn': 'ИНН', 'odog': 'Договор',
+	}
+	order = ['- Основное', 'name', 'hwTypeId', 'uid', 'ph0', 'passwd', 'creatorId',
+		'- Характеристики', 'tts', 'tvin', 'treg', 'tmark', 'tmod', 'tyar', 
+		'- Организация','oinn', 'odog',
+	] 
+	print "<center><div class='box' style='background-color: #ccd; width: 800px; padding: 12px; margin: 8px;' ><table width=100%>"
+	for vnm in order:
+		if vnm[0] == '-':
+			print "<tr><th colspan=2 class='tit'> &nbsp; %s &nbsp; </th></tr>" % vnm[1:]
+			continue
+		print "<tr><td align='right' width=220> %s: </td><td>" % pars_obj[vnm]
+		if vnm in ['hwTypeId', 'creatorId']:
+			print "<span id='_%s'> %s </span>" % (vnm, vnm.upper())
+		else:
+			if def_vals.has_key(vnm):
+				val = def_vals[vnm]
+			else:	val = ''
+			print "<input id='%s' name='%s' type='text' value='%s' />" % (vnm, vnm, val)
+		print "</td></tr>"
+	print "</table></div></center>"
 
 def	perror (tit = None, txt = None):
 	if not tit:	tit = ''
@@ -118,7 +157,7 @@ def	main (request, conf):
 			</fieldset>"""
 		out_head(CONFIG.get('System', 'name'))
 		print	"<div id='dbody' class='hidd'>"
-		print	"""perror (txt = "MAIN "*3)"""
+		out_form_auto ()
 		print	"</div><!-- dbody	-->"
 		print	"""<div id="log" style='border: 1px solid #bbc; color: #668;'></div>"""
 #		print	"</form><!-- myForm	-->"

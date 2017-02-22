@@ -10,36 +10,32 @@ import	json
 
 import	urllib2, random, mimetypes
 
-def	upload_creative(self, account_id, file_path):
-	""""""
-	boundary = '-----------------------------' + str(int(random.random()*1e10))
-	parts = []
-
-	# Set account ID part.
-	parts.append('--' + boundary)
-	parts.append('Content-Disposition: form-data; name="account_id"')
-	parts.append('')
-	parts.append(str(account_id))
-
-	# Set creative contents part.
-	parts.append('--' + boundary)
-	parts.append('Content-Disposition: form-data; name="userfile"; filename="%s"' % file_path)
-	parts.append('Content-Type: %s' % mimetypes.guess_type(file_path)[0] or 'application/octet-stream')
-	parts.append('')
-	# TODO: catch errors with opening file.
-	parts.append(open(file_path, 'r').read())
-
-	parts.append('--' + boundary + '--')
-	parts.append('')
-
-	body = '\r\n'.join(parts)
-
-	headers = {'content-type': 'multipart/form-data; boundary=' + boundary}
-	url = self._resolve_url('/a/creative/uploadcreative')
-	req = urllib2.Request(url, headers=headers, data=body)
-	res = urllib2.urlopen(req)
-
-	return json.loads(res.read())
+err_dict = {
+	0:	'Удачное выполнение операции',
+	1:	'Недействительная сессия',
+	2:	'Неверное имя сервиса',
+	3:	'Неверный результат',
+	4:	'Неверный ввод',
+	5:	'Ошибка выполнения запроса',
+	6:	'Неизвестная ошибка',
+	7:	'Доступ запрещен',
+	8:	'Неверный пароль или имя пользователя',
+	9:	'Сервер авторизации недоступен, пожалуйста попробуйте повторить запрос позже',
+	1001:	'Нет сообщений для выбранного интервала',
+	1002:	'Элемент с таким уникальным свойством уже существует',
+	1003:	'Только один запрос разрешается в данный момент времени',
+	'error':	'Неизвестный код ошибки ',
+	'nores':	'Отсутствует результат ',
+	}
+def	requesr (data):
+	res = send_post(data)
+	if res:
+		if type(res) == dict and res.has_key('error'):
+			if err_dict.has_key(res['error']):
+				return (False, err_dict[res['error']])
+			else:	return (False, err_dict['error'] +str(res['error']))
+		else:	return (True, res)
+	else:	return (False, err_dict['nores'])
 
 def	upload_wlp(sid, svc):
 	print "upload_wlp", "#"*33, "\n"
