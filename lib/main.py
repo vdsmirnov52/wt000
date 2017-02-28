@@ -26,19 +26,36 @@ jsLocal =  """<script type='text/javascript'>
 	init_users();
 	})
 	function	set_shadow (shstat) {	$.ajax({data: 'shstat='+ shstat +'&' +$('form').serialize()});	}
-	function	add_row(tabname) {	$.ajax({data: 'shstat=add_row&table='+ tabname +'&' +$('form').serialize()});}
-	function	set_message(txt) {	$('#message').html(txt);}
+//	function	add_row(tabname) {	$.ajax({data: 'shstat=add_row&table='+ tabname +'&' +$('form').serialize()});	}
+	function	set_message(txt) {	$('#message').html(txt);	}
 	function	set_val(id, val) {
 		alert ('Id: ' +id +' Val: ' + val);
 		$(id).val(val)
 	}
 function	check_form_auto() {
 	var	 messg = '';
+
+$('#name').val('EGTS-24947651');
+$('#hwTypeId').val('29');
+$('#uid').val('863591024947651');
+$('#creatorId').val(31);
+$('#oinn').val('520123456777');
+
 	if ($('#name').val() == '')	messg += '\\tОтсутствует Наименование объекта!\\n';
 	if ($('#hwTypeId').val() == '')	messg += '\\tОтсутствует hwTypeId объекта!\\n';
-//	if ($('#creatorId').val() == '')	messg += '\\tОтсутствует creatorId объекта!\\n';
-	if (messg != '') {	alert ('Ошибки в заполнении формы:\\n' +messg);	return;	}
-	else {	alert('Ok! creatorId: ' + $('#creatorId').val()); set_shadow('create_unit');	}
+	if ($('#uid').val() == '')	messg += '\\tОтсутствует  Уникальный ID объекта!\\n';
+//	if (!$('#hwTypeId').val() && !$('#creatorId').val())	messg += '\\n  Проверьте соединение с сервером!';
+	if (messg != '') {
+		alert ('Ошибки в заполнении формы:\\n' +messg);	
+		return false;
+	} else {
+		return true;
+	}
+}
+function	create_auto () {
+	if (check_form_auto()) {
+		alert('Ok! creatorId: ' + $('#creatorId').val()); set_shadow('create_unit');
+	}
 }
 /////////////////////////////////////////////
 function msg(text) { $("#log").prepend(text + "<br/>"); }
@@ -94,7 +111,14 @@ def	out_form_auto ():
 		'- Характеристики', 'tts', 'tvin', 'treg', 'tmark', 'tmod', 'tyar', 
 		'- Организация','oinn', 'odog',
 	] 
-	print "<center><div class='box' style='background-color: #ccd; width: 800px; padding: 12px; margin: 8px;' ><table width=100%>"
+	print """<center><div class='grey' style='background-color: #dde; width: 800px; padding: 10px; margin: 8px;' >
+		<div class='box' style='background-color: #ccd;'><table width=100%><tr><td><span class='tit'> Новый объект </span></td>
+		<td align=right>
+		<input type='button' class='butt' value='check_form_auto' onclick=" check_form_auto();" />
+		<input type='button' class='butt' value='Создать' onclick=" create_auto();" />
+		</td>
+		</tr></table></div>
+		<table width=100%>"""
 	for vnm in order:
 		if vnm[0] == '-':
 			print "<tr><th colspan=2 class='tit'> &nbsp; %s &nbsp; </th></tr>" % vnm[1:]
@@ -108,7 +132,9 @@ def	out_form_auto ():
 			else:	val = ''
 			print "<input id='%s' name='%s' type='text' value='%s' />" % (vnm, vnm, val)
 		print "</td></tr>"
-	print "</table></div></center>"
+	print "</table>"
+	print "<br /><div id='clog' style='border: 1px solid #bbc; color: #668; height: 120px; overflow: auto; text-align: left;'></div>"
+	print "</div></center>"
 
 def	perror (tit = None, txt = None):
 	if not tit:	tit = ''
