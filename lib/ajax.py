@@ -112,12 +112,16 @@ step == 2	###	"svc":"core/update_data_flags"
 	'f': 9007199254740991}] 
 [{u'hwd': 0, u'uid': u'863591027085418', u'hw': 29}, {u'ph': u'+777777777'}, [1, {u'v': u'520123456789', u'id': 1, u'n': u'inn'}], {}
 """
-def	create_unit(request, step = 2):
+def	create_unit(request, step = 2, sres = None):
 	import	twlp
 	sid = usid = un_name = hwid = None
 	if not (request.has_key('wsid') and request['wsid']):
 		print """~eval| msg("<span style='color: #a00; font-weight: bold;'>Птеряно соединение с сервером!</span>")"""
-		return
+		return	False, None
+	if not (request.has_key('uid') and request['uid'].strip()):
+		print """~eval| msg("<span style='color: #a00; font-weight: bold;'>Отсутствует Уникальный ID!</span>")"""
+		return  False, None
+	UID = request['uid'].strip()
 	sid = request['wsid']
 	print "~clog|"
 	if step == 1:
@@ -134,11 +138,12 @@ def	create_unit(request, step = 2):
 			fres, sres = twlp.requesr(data)
 			if fres:
 				out_json(sres, iddom = 'clog')
+			return	fres, sres
 		else:	out_json(data, iddom = 'clog')
 	elif step == 2:
-		sres1 = {'item': {'uacl': 880265986047, 'uid2': '', 'uid': '', 'hw': 29, 'psw': '', 'm': 0, 'ph2': '', 'ph': '', 'cls': 2, 'id': 250, 'nm': 'EGTS-27085418'}, 'flags': 257}
-		itemId = sres1['item']['id']
-		hwTypeId = sres1['item']['hw']
+	#	sres = {'item': {'uacl': 880265986047, 'uid2': '', 'uid': '', 'hw': 29, 'psw': '', 'm': 0, 'ph2': '', 'ph': '', 'cls': 2, 'id': 250, 'nm': 'EGTS-27085418'}, 'flags': 257}
+		itemId = sres['item']['id']
+		hwTypeId = sres['item']['hw']
 	#	data = {'sid': sid, 'svc': 'core/update_data_flags', "params":{"spec":[{"type":"id","data": itemId,"flags":9007199254740991,"mode":1}]}}
 		data = {'sid': sid, 'svc': 'core/batch', "params":[{'svc': 'core/update_data_flags', "params":{"spec":[{"type":"id","data": itemId,"flags":9007199254740991,"mode":1}]}}]}
 		out_json(data, iddom = 'clog')
@@ -146,29 +151,68 @@ def	create_unit(request, step = 2):
 		if not fres:
 			print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 			out_json(data, iddom = 'clog')
-			return
-		### Читать все объекты "itemsType":"avl_unit" ИЩЕМ или ПРОВЕРЯЕМ ???
+			return	False
+		data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": 245, "units":[itemId]}}	# Добавить itemId в Группу 'Вторя Test'
+		fres, sres = twlp.requesr(data)
+		if fres:
+			out_json(sres, iddom = 'clog')
+		else:	print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
+		### Читать все объекты "itemsType":"avl_unit" ИЩЕМ или ПРОВЕРЯЕМ что и зачем ???
+		# ПРОВЕРЯЕМ UID 
 		'''
 		data = {'sid': sid, 'svc': 'core/batch', "params":[
 			{"svc":"core/search_items","params":{"spec":{"itemsType":"avl_unit","propName":"*","propValueMask":"*","sortType":""},"force":1,"flags":1,"from":0,"to":4294967295}}],
 			"flags":0}
 		fres, sres = twlp.requesr(data)
 		print fres, out_json(sres)
-	elif step == 3:
-		'''
-		params = []
+
 		if request.has_key('uid') and request['uid'].strip():
 			params.append ({"svc":"unit/update_device_type","params":{"itemId": itemId,"deviceTypeId": hwTypeId,"uniqueId": request['uid'].strip()}})
+		'''
+		params = []
+		params.append ({"svc":"unit/update_device_type","params":{"itemId": itemId,"deviceTypeId": hwTypeId,"uniqueId": UID}})
 	#	if request.has_key('uid') and request['uid'].strip():
-		if request.has_key('ph0') and request['ph0'].strip():
-			params.append ({"svc":"unit/update_phone","params":{"itemId": itemId,"phoneNumber": request['ph0'].strip()}})
-		if request.has_key('ph2') and request['ph2'].strip():
-			params.append ({"svc":"unit/update_phone2","params":{"itemId": itemId,"phoneNumber": request['ph2'].strip()}})
-		if request.has_key('passwd') and request['passwd'].strip():
-			params.append ({"svc":"unit/update_access_password","params":{"itemId": itemId,"accessPassword": request['passwd'].strip()}})
-		if request.has_key('oinn') and request['oinn'].strip():
-			params.append ({"svc":"item/update_admin_field","params":{"id":0,"n":"inn","v": request['oinn'].strip(),"itemId": itemId,"callMode":"create"}})
+		ph = ph2 = passwd = ""
+		if request.has_key('ph0') and request['ph0'].strip():		ph = request['ph0'].strip()
+		if request.has_key('ph2') and request['ph2'].strip():		ph2 = request['ph2'].strip()
+		if request.has_key('passwd') and request['passwd'].strip():	passwd = request['passwd'].strip()
+		params.append ({"svc":"unit/update_phone","params":{"itemId": itemId,"phoneNumber": ph}})
+		params.append ({"svc":"unit/update_phone2","params":{"itemId": itemId,"phoneNumber": ph2}})
+		params.append ({"svc":"unit/update_access_password","params":{"itemId": itemId,"accessPassword": passwd}})
 		params.append ({"svc":"item/add_log_record","params":{"itemId": itemId,"action":"import_unit_cfg","newValue":"","oldValue":""}})
+
+		### Характеристики
+	#	svc=item/update_profile_field&params={"itemId":<long>, "n":["vehicle_type" "vin" "registration_plate" "brand" "model" "year"], "v":<text>
+		vehicle_type = vin = registration_plate = brand = model = year = ""
+		if request.has_key('tts') and request['tts'].strip():		vehicle_type = request['tts'].strip()
+		if request.has_key('tvin') and request['tvin'].strip():		vin = request['tvin'].strip()
+		if request.has_key('treg') and request['treg'].strip():		registration_plate = request['treg'].strip()
+		if request.has_key('tmark') and request['tmark'].strip():	brand = request['tmark'].strip()
+		if request.has_key('tmod') and request['tmod'].strip():		model = request['tmod'].strip()
+		if request.has_key('tyear') and request['tyear'].strip():	year = request['tyear'].strip()
+		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"vehicle_type", "v": vehicle_type}})
+		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"vin", "v": vin}})
+		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"registration_plate", "v": registration_plate}})
+		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"brand", "v": brand}})
+		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"model", "v": model}})
+		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"year", "v": year}})
+
+		### Произвольные поля
+	#	svc=item/update_admin_field&params={"itemId":<long>, "id":<long>,"callMode":(create, update, delete), "n":<text>, "v":<text>}
+		'''
+		oinn = odog = ""
+		if request.has_key('oinn') and request['oinn'].strip():	oinn = request['oinn'].strip()
+		params.append ({"svc":"item/update_admin_field","params":{"itemId": itemId, "id":0,"n":"inn","v": oinn, "callMode":"create"}})
+		if request.has_key('odog') and request['odog'].strip():	odog = request['odog'].strip()
+		params.append ({"svc":"item/update_admin_field","params":{"itemId": itemId, "id":1,"n":"dog","v": odog, "callMode":"create"}})
+		'''
+		j = 0
+		for n in ['oinn', 'odog']:	# Имена полей в форме 
+			v = ""
+			if request.has_key(n) and request[n].strip():	v = request[n].strip()
+			params.append ({"svc":"item/update_admin_field","params":{"itemId": itemId, "id": j, "n": n, "v": v, "callMode":"create"}})
+			j += 1
+
 	#	out_json (params)
 		data = {'sid': sid, 'svc': 'core/batch', "params": params, "flags":0}
 		fres, sres = twlp.requesr(data)
@@ -213,9 +257,11 @@ def	main (SCRIPT_NAME, request, referer):
 			elif shstat == 'get_hw_types':		get_hw_types (request)
 			elif shstat == 'get_users':		get_items (request, 'user')
 			elif shstat == 'create_unit':
-				create_unit (request, 1)
-				time.sleep(2)
-				create_unit (request, 2)
+				fres, sres = create_unit (request, 1)
+				if fres:
+					time.sleep(2)
+					create_unit (request, 2, sres)
+				else:	print "~error|<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 			else:
 				print "~eval|alert ('Unknown shstat: [%s]!');" % request ['shstat']
 		else:

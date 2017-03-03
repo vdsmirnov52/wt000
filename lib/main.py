@@ -35,9 +35,9 @@ jsLocal =  """<script type='text/javascript'>
 function	check_form_auto() {
 	var	 messg = '';
 
-$('#name').val('EGTS-24947651');
+$('#name').val('EGTS-27083314');
 $('#hwTypeId').val('29');
-$('#uid').val('863591024947651');
+$('#uid').val('863591027083314');
 $('#creatorId').val(31);
 $('#oinn').val('520123456777');
 
@@ -103,12 +103,12 @@ def	out_form_auto ():
 	#'- Основное',
 	'name': 'Имя', 'hwTypeId': 'Тип устройства', 'creatorId': 'Создатель', 'uid': 'Уникальный ID', 'ph0': 'Телефонный номер', 'passwd': 'Пароль доступа к объекту', #'dataFlags',
 	#'- Характеристики',
-	'tts': 'Тип Т/С', 'tvin': 'VIN', 'treg': 'Регистрационный знак', 'tmark': 'Марка', 'tmod': 'Модель', 'tyar': 'Год выпуска',
+	'tts': 'Тип Т/С', 'tvin': 'VIN', 'treg': 'Регистрационный знак', 'tmark': 'Марка', 'tmod': 'Модель', 'tyear': 'Год выпуска',
 	#'- Организация', 
 	'oinn': 'ИНН', 'odog': 'Договор',
 	}
 	order = ['- Основное', 'name', 'hwTypeId', 'uid', 'ph0', 'passwd', 'creatorId',
-		'- Характеристики', 'tts', 'tvin', 'treg', 'tmark', 'tmod', 'tyar', 
+		'- Характеристики', 'tts', 'tvin', 'treg', 'tmark', 'tmod', 'tyear', 
 		'- Организация','oinn', 'odog',
 	] 
 	print """<center><div class='grey' style='background-color: #dde; width: 800px; padding: 10px; margin: 8px;' >

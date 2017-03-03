@@ -80,7 +80,7 @@ usr2token = {	# //wialon.rnc52.ru
 	}
 '''
 usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8675A1AAA19667E045F5188C6A642D87C90FAF956",
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8173A70E00F093CE9B2EB94FAB7A3D530377F71D5",
 	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6",
 	}
 # wialon	http://wialon.rnc52.ru/login.html?access_token=1d5a4a6ab2bde440204e6bd1d53b3af8192DDC96D305E8D3DF46DB94C181C5CCC475A14D&svc_error=0
@@ -89,7 +89,7 @@ usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный 
 # wialon	http://test-wialon.rnc52.ru/login.html?access_token=1d5a4a6ab2bde440204e6bd1d53b3af8675A1AAA19667E045F5188C6A642D87C90FAF956&svc_error=0
 # V.Smirnov	http://test-wialon.rnc52.ru/login.html?access_token=c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6&svc_error=0
 
-url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'1d5a4a6ab2bde440204e6bd1d53b3af891F531BAA376794D25274B3EAD44CAF9BACCD247'}"
+url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'1d5a4a6ab2bde440204e6bd1d53b3af8173A70E00F093CE9B2EB94FAB7A3D530377F71D5'}"
 def	login (token = None):
 	global	sess
 	if not token:
