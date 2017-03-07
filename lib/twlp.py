@@ -118,7 +118,7 @@ def	send_post (pdict = None, pfile = None):
 DEBUG = False
 URL =	r"http://test-wialon.rnc52.ru/wialon/ajax.html"
 usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8675A1AAA19667E045F5188C6A642D87C90FAF956",
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af857005C93BBFFF0087E289576C9C8CFFB467C7388",
 	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6",
 	}
 
