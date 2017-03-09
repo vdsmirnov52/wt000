@@ -78,7 +78,7 @@ def	pobj(obj, level = 0):
 			print "[\n", spr,
 		else:	print "[", 
 		for o in obj:
-			if type(o) == unicode:		print "'%s'," % o,
+			if type(o) == unicode:		print "'%s'," % o.encode('UTF-8'),
 			elif type(o) in [int, float]:	print "%s," % str(o),
 			else:	ll.append(o)
 		for o in ll:
@@ -91,8 +91,8 @@ def	pobj(obj, level = 0):
 		print "{", #level 
 		for key in obj.keys():
 			val = obj[key]
-			if type(val) == unicode:		print "'%s': '%s'," % (key, val),
-			elif type(val) in [int, float]:		print "'%s': %s," % (key, str(val)) ,
+			if type(val) == unicode:		print "'%s': '%s'," % (key.encode('UTF-8'), val.encode('UTF-8')),
+			elif type(val) in [int, float]:		print "'%s': %s," % (key.encode('UTF-8'), str(val)) ,
 			else:	dd[key] = val
 	#	print "DDD", dd.keys()
 		for key, val in dd.iteritems():
@@ -112,11 +112,15 @@ def	get_items (request, itype, func = out_json, **keywords):
 	if itype not in itemsType:
 		print "~error| get_items. Неизвестный itemsType: '%s'" % itype
 		return
+	if keywords.has_key('flags'):
+		flags = keywords['flags']
+	else:	flags = 0x0101	# 257
+	print "flags", flags
 	if request.has_key('wsid') and request['wsid']:
 		sid = request['wsid']
 		import	twlp
 		# svss['search_items'], "'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':1025,'from':0,'to':0")
-		data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':itype,'propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':1025,'from':0,'to':0}}
+		data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':itype,'propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':flags,'from':0,'to':0}}
 		fres, sres = twlp.requesr(data)
 		if fres:
 			if itype == 'user':
@@ -151,7 +155,7 @@ step == 2	###	"svc":"core/update_data_flags"
 	'f': 9007199254740991}] 
 [{u'hwd': 0, u'uid': u'863591027085418', u'hw': 29}, {u'ph': u'+777777777'}, [1, {u'v': u'520123456789', u'id': 1, u'n': u'inn'}], {}
 """
-def	create_unit(request, step = 2, sres = None):
+def	create_unit(request, step = 1, sres = None):
 	import	twlp
 	sid = usid = un_name = hwid = None
 	if not (request.has_key('wsid') and request['wsid']):
@@ -164,21 +168,23 @@ def	create_unit(request, step = 2, sres = None):
 	sid = request['wsid']
 	print "~clog|"
 	if step == 1:
-		'''
+		'''	request['wusid'] request['name'] request['hwTypeId'] request['creatorId']
 		'''
 		if request.has_key('wusid') and request['wusid']:	usid = request['wusid']
-		if request.has_key('name') and request['name']:	un_name = request['name']
+		if request.has_key('name') and request['name']:		un_name = request['name']
 		if request.has_key('hwTypeId') and request['hwTypeId']:	hwid = request['hwTypeId']
 		if request.has_key('creatorId') and request['creatorId']:
 			crid = request['creatorId']
 		else:	crid = usid
-		if sid and usid and un_name and hwid:
+		if sid and crid and un_name and hwid:
 			data = {'sid': sid, 'svc': 'core/create_unit', 'params': {"creatorId": crid, "name": un_name,"hwTypeId": hwid,"dataFlags":"257"}}
 			fres, sres = twlp.requesr(data)
 			if fres:
 				out_json(sres, iddom = 'clog')
 			return	fres, sres
-		else:	out_json(data, iddom = 'clog')
+		else:	#ut_json(data, iddom = 'clog')
+			print sid, csid, un_name, hwid
+			return	False, request
 	elif step == 2:
 	#	sres = {'item': {'uacl': 880265986047, 'uid2': '', 'uid': '', 'hw': 29, 'psw': '', 'm': 0, 'ph2': '', 'ph': '', 'cls': 2, 'id': 250, 'nm': 'EGTS-27085418'}, 'flags': 257}
 		itemId = sres['item']['id']
@@ -191,11 +197,13 @@ def	create_unit(request, step = 2, sres = None):
 			print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 			out_json(data, iddom = 'clog')
 			return	False
+		'''
 		data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": 245, "units":[itemId]}}	# Добавить itemId в Группу 'Вторя Test'
 		fres, sres = twlp.requesr(data)
 		if fres:
 			out_json(sres, iddom = 'clog')
 		else:	print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
+		'''
 		### Читать все объекты "itemsType":"avl_unit" ИЩЕМ или ПРОВЕРЯЕМ что и зачем ???
 		# ПРОВЕРЯЕМ UID 
 		'''
@@ -238,13 +246,6 @@ def	create_unit(request, step = 2, sres = None):
 
 		### Произвольные поля
 	#	svc=item/update_admin_field&params={"itemId":<long>, "id":<long>,"callMode":(create, update, delete), "n":<text>, "v":<text>}
-		'''
-		oinn = odog = ""
-		if request.has_key('oinn') and request['oinn'].strip():	oinn = request['oinn'].strip()
-		params.append ({"svc":"item/update_admin_field","params":{"itemId": itemId, "id":0,"n":"inn","v": oinn, "callMode":"create"}})
-		if request.has_key('odog') and request['odog'].strip():	odog = request['odog'].strip()
-		params.append ({"svc":"item/update_admin_field","params":{"itemId": itemId, "id":1,"n":"dog","v": odog, "callMode":"create"}})
-		'''
 		j = 0
 		for n in ['oinn', 'odog']:	# Имена полей в форме 
 			v = ""
@@ -261,6 +262,14 @@ def	create_unit(request, step = 2, sres = None):
 			return
 		print fres, sres
 	else:	print "~error|", request
+
+def	add_into_group (sid, group_id, units = None):
+	""" Добавить units в группу group_id	"""
+	data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": 245, "units":[itemId]}}	# Добавить itemId в Группу 'Вторя Test'
+	fres, sres = twlp.requesr(data)
+	if fres:
+		out_json(sres, iddom = 'clog')
+	else:	print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 
 def	main (request):
 	global	sid, usid
@@ -295,6 +304,88 @@ def	main (request):
 	except:
 		exc_type, exc_value = sys.exc_info()[:2]
 		print "~error|<span class='error'>EXCEPT:", exc_type, exc_value, "</span>"
+
+def	check_doube_items (items_id):
+	print items_id
+#	main ({'shstat': 'connect'})
+	import	twlp
+	fres, sres = twlp.requesr({'svc': 'token/login', 'params': "{'token':'%s'}" % twlp.usr2token['wialon']})
+	if not fres:
+		print sres
+		return	False
+	usr = sres['au']
+	sid = sres['eid']
+	usid = sres['user']['id']
+	print "D"*22, usr, sid, usid
+	flags = 0x0101
+	data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':flags,'from':0,'to':0}}
+	fres, sres = twlp.requesr(data)
+	if not fres:
+		print sres
+		return	False
+	jitems_id = ":".join(items_id)
+	print jitems_id
+	for it in sres['items']:
+		if it['hw'] == 29:	# EGTS
+			
+			if not it['uid'] in jitems_id:
+				print "\t", it['id'], it['uid']
+			else:
+			#	svc=unit/update_unique_id&params={"itemId":<long>, "uniqueId":<text new unique ID>}
+				j = 0
+				for suid in items_id:
+					if it['uid'] in suid:	break
+					j += 1
+				del items_id[j]
+				print "D\t", it['id'], it['uid'], suid
+				data = {'sid': sid, 'svc': 'unit/update_unique_id', 'params':{"itemId": it['id'], "uniqueId": "%s" % suid}}
+		#		print data
+				fres, sres = twlp.requesr(data)
+				print fres, sres, data
+	print items_id
+	request = {'wsid': sid, 'hwTypeId': 29, 'creatorId': 31,}
+	for suid in items_id:
+		if not suid.isdigit():	continue
+		request['uid'] = suid
+	#	request['wusid']
+		request['name'] = "EGTS-%s" % suid[-8:]
+		print request
+		fres, sres = create_unit (request, 1)
+		if fres:
+			time.sleep(2)
+			create_unit (request, 2, sres)
+		print fres, sres 
+		break
+	'''
+		request {'uid': it['uid'], 'wsid': sid, 'name': "EGTS-"	)
+		request['wsid']
+		request['wusid'] request['name'] request['hwTypeId'] request['creatorId']
+	'''
+
+def	check_receved_log (fileLog):
+	fileTmp = r"/tmp/Received.ID.log"
+	cmd = "tail -n 22 %s | grep Received > %s" % (fileLog, fileTmp)
+#	cmd = "fgrep Received /home/wialon/wlocal/logs/*.log | tail > %s" % fileTmp
+#	print cmd
+	os.system (cmd)
+	f = open (fileTmp, 'r')
+	ffs = f.read()
+	if not ffs:
+		os.system("ls -l %s" % fileTmp)
+		return
+	fs = ffs.split('\n')
+	list_idd = []
+	for s in fs:
+		ss = s.strip()
+		if not ss:	continue
+		ls = s.split()
+		if 'ID:' in ls:
+			unit = ls[ls.index('ID:') -1]
+			idd = ls[ls.index('ID:') +1]
+		if not idd in list_idd:		list_idd.append(idd)
+		print unit, idd
+	if (list_idd):	check_doube_items (list_idd)
+	print "#"*22
 
 def	outhelp():
 	print "outhelp", sys.argv
@@ -336,15 +427,17 @@ if __name__ == "__main__":
 				get_items ({'wsid': sid}, itemType, func = out_items)
 			else:	"Ошибка типа '%s'!\n" % itemType , outhelp()
 		if FlgetLog:
-			cmd = "tail %s" % fileLog
-			print cmd
-			os.system (cmd)
-		'''
+	#		fileLog = r"/home/wialon/wlocal/logs/egts.log"
+			if not os.path.isfile(fileLog):
+				print "Отсутствует файд '%s'!" % fileLog
+				outhelp()
+			check_receved_log (fileLog)
+			'''
 			for itt in itemTypes:
 				get_items ({'wsid': sid}, itt, func = out_items, )
 		get_items ({'wsid': sid}, 'user', func= None)
 		main ({'shstat': ''}) 
-		'''
+			'''
 	except	getopt.GetoptError:
 		print "Ошибка в параметрах!\n",	outhelp()
 	print "dt %9.4f" % (sttmr - time.time())
