@@ -7,6 +7,8 @@ import	getopt
 
 LIBRARY_DIR = r"/home/smirnov/WT/lib"          # Путь к рабочей директории (библиотеке)
 sys.path.insert(0, LIBRARY_DIR)
+import	twlp
+
 WHOST =	r"http://wialon.rnc52.ru/wialon/"
 
 def	out_json(obj, **keywords):
@@ -37,7 +39,7 @@ def	select_hw_types (obj, sname = 'hwTypeId', iddom = '_hwTypeId'):
 def	get_hw_types (request):
 	if request.has_key('wsid') and request['wsid']:
 		sid = request['wsid']
-		import	twlp
+#		import	twlp
 		vtype = ["auto", "mobile", "soft", "tracker"]
 		data ={'sid': sid, 'svc': 'core/get_hw_types', 'params': { "filterType":"type", "filterValue":["auto", "mobile", "soft", "tracker"], "includeType": True}}
 		fres, sres = twlp.requesr(data)		# sres = twlp.send_post(data)
@@ -118,7 +120,7 @@ def	get_items (request, itype, func = out_json, **keywords):
 	print "flags", flags
 	if request.has_key('wsid') and request['wsid']:
 		sid = request['wsid']
-		import	twlp
+#		import	twlp
 		# svss['search_items'], "'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':1025,'from':0,'to':0")
 		data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':itype,'propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':flags,'from':0,'to':0}}
 		fres, sres = twlp.requesr(data)
@@ -156,7 +158,7 @@ step == 2	###	"svc":"core/update_data_flags"
 [{u'hwd': 0, u'uid': u'863591027085418', u'hw': 29}, {u'ph': u'+777777777'}, [1, {u'v': u'520123456789', u'id': 1, u'n': u'inn'}], {}
 """
 def	create_unit(request, step = 1, sres = None):
-	import	twlp
+#	import	twlp
 	sid = usid = un_name = hwid = None
 	if not (request.has_key('wsid') and request['wsid']):
 		print """~eval| msg("<span style='color: #a00; font-weight: bold;'>Птеряно соединение с сервером!</span>")"""
@@ -263,18 +265,48 @@ def	create_unit(request, step = 1, sres = None):
 		print fres, sres
 	else:	print "~error|", request
 
+list_unit_groups = {}
+
 def	add_into_group (sid, group_id, units = None):
 	""" Добавить units в группу group_id	"""
-	data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": 245, "units":[itemId]}}	# Добавить itemId в Группу 'Вторя Test'
+	global	list_unit_groups
+	if not units:	return
+	if not list_unit_groups:
+		get_items ({'wsid': sid}, 'avl_unit_group', func = get_unit_from_group)
+	units_list = []
+	units_old = list_unit_groups[245]
+	while True:
+		if units and units_old:
+			if units[0] > units_old[0]:
+				units_list.append(units_old.pop(0))
+			elif units[0] < units_old[0]:
+				units_list.append(units.pop(0))
+			else:
+				units_list.append(units.pop(0))
+				del units_old[0]
+		elif units:
+			for i in units:		units_list.append(i)
+			break
+		elif units_old:
+			for i in units_old:	units_list.append(i)
+			break
+	data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": 245, "units": units_list}}	# Добавить itemId в Группу 'Вторя Test'
 	fres, sres = twlp.requesr(data)
 	if fres:
 		out_json(sres, iddom = 'clog')
 	else:	print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 
+def     get_unit_from_group (obj, **keywords):
+	""" Читать список объектов items['u'] в группе	"""
+	global	list_unit_groups
+#	print "get_unit_from_group", keywords
+	if not (obj and obj.has_key('items') and obj['items']):	return
+#	print obj['items']
+	for item in obj['items']:
+		list_unit_groups [item['id']] = item['u'] 
+
 def	main (request):
 	global	sid, usid
-	import	twlp
-	#from lib import twlp
 	try:
 		if request.has_key ('shstat'):
 			shstat = request ['shstat']
@@ -306,9 +338,8 @@ def	main (request):
 		print "~error|<span class='error'>EXCEPT:", exc_type, exc_value, "</span>"
 
 def	check_doube_items (items_id):
+	""" Проверка старых UID (дублей), Создание (добавление) новых avl_unit 	"""
 	print items_id
-#	main ({'shstat': 'connect'})
-	import	twlp
 	fres, sres = twlp.requesr({'svc': 'token/login', 'params': "{'token':'%s'}" % twlp.usr2token['wialon']})
 	if not fres:
 		print sres
@@ -356,13 +387,11 @@ def	check_doube_items (items_id):
 			create_unit (request, 2, sres)
 		print fres, sres 
 		break
-	'''
-		request {'uid': it['uid'], 'wsid': sid, 'name': "EGTS-"	)
-		request['wsid']
-		request['wusid'] request['name'] request['hwTypeId'] request['creatorId']
-	'''
+	group_id = 245	# 'Вторя Test'
+	add_into_group (sid, group_id, units = tems_id)
 
 def	check_receved_log (fileLog):
+	""" Проверка наличия объектов Вне системы (стучатся не описаны) 	"""
 	fileTmp = r"/tmp/Received.ID.log"
 	cmd = "tail -n 22 %s | grep Received > %s" % (fileLog, fileTmp)
 #	cmd = "fgrep Received /home/wialon/wlocal/logs/*.log | tail > %s" % fileTmp
@@ -418,7 +447,10 @@ if __name__ == "__main__":
 				fileLog = o[1]
 
 		main ({'shstat': 'connect'})
-		if FlTesr:	sys.exit()
+		if FlTesr:
+			add_into_group (sid, 245, [261, 254, 250, 259, 258, 257])
+			for k in list_unit_groups.keys():	print "%4d\t" % k,  list_unit_groups[k]
+			sys.exit()
 		print "#"*22
 		if FlHWTyps:	main ({'shstat': 'get_hw_types', 'wsid': sid}) 
 		if FlUsers:	main ({'shstat': 'get_users', 'wsid': sid})
