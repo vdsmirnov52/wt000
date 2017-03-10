@@ -199,13 +199,6 @@ def	create_unit(request, step = 1, sres = None):
 			print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 			out_json(data, iddom = 'clog')
 			return	False
-		'''
-		data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": 245, "units":[itemId]}}	# Добавить itemId в Группу 'Вторя Test'
-		fres, sres = twlp.requesr(data)
-		if fres:
-			out_json(sres, iddom = 'clog')
-		else:	print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
-		'''
 		### Читать все объекты "itemsType":"avl_unit" ИЩЕМ или ПРОВЕРЯЕМ что и зачем ???
 		# ПРОВЕРЯЕМ UID 
 		'''
@@ -265,16 +258,22 @@ def	create_unit(request, step = 1, sres = None):
 		print fres, sres
 	else:	print "~error|", request
 
-list_unit_groups = {}
+###	ID avl_unit_group
+GID_noData =	256
+GID_2Test =	245
+GID_1Test =	36
+
+list_unit_groups = {}	# 
 
 def	add_into_group (sid, group_id, units = None):
 	""" Добавить units в группу group_id	"""
 	global	list_unit_groups
+#	group_id = GID_2Test	# Добавить itemId в Группу 'Вторя Test'
 	if not units:	return
 	if not list_unit_groups:
 		get_items ({'wsid': sid}, 'avl_unit_group', func = get_unit_from_group)
 	units_list = []
-	units_old = list_unit_groups[245]
+	units_old = list_unit_groups[group_id]
 	while True:
 		if units and units_old:
 			if units[0] > units_old[0]:
@@ -290,7 +289,7 @@ def	add_into_group (sid, group_id, units = None):
 		elif units_old:
 			for i in units_old:	units_list.append(i)
 			break
-	data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": 245, "units": units_list}}	# Добавить itemId в Группу 'Вторя Test'
+	data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": group_id, "units": units_list}}
 	fres, sres = twlp.requesr(data)
 	if fres:
 		out_json(sres, iddom = 'clog')
@@ -337,9 +336,9 @@ def	main (request):
 		exc_type, exc_value = sys.exc_info()[:2]
 		print "~error|<span class='error'>EXCEPT:", exc_type, exc_value, "</span>"
 
-def	check_doube_items (items_id):
+def	check_doube_items (items_uid):
 	""" Проверка старых UID (дублей), Создание (добавление) новых avl_unit 	"""
-	print items_id
+	print items_uid
 	fres, sres = twlp.requesr({'svc': 'token/login', 'params': "{'token':'%s'}" % twlp.usr2token['wialon']})
 	if not fres:
 		print sres
@@ -354,47 +353,50 @@ def	check_doube_items (items_id):
 	if not fres:
 		print sres
 		return	False
-	jitems_id = ":".join(items_id)
-	print jitems_id
+	jitems_uid = ":".join(items_uid)
+	print jitems_uid
 	for it in sres['items']:
 		if it['hw'] == 29:	# EGTS
-			
-			if not it['uid'] in jitems_id:
-				print "\t", it['id'], it['uid']
-			else:
-			#	svc=unit/update_unique_id&params={"itemId":<long>, "uniqueId":<text new unique ID>}
-				j = 0
-				for suid in items_id:
-					if it['uid'] in suid:	break
-					j += 1
-				del items_id[j]
-				print "D\t", it['id'], it['uid'], suid
-				data = {'sid': sid, 'svc': 'unit/update_unique_id', 'params':{"itemId": it['id'], "uniqueId": "%s" % suid}}
-		#		print data
-				fres, sres = twlp.requesr(data)
-				print fres, sres, data
-	print items_id
+			if not it['uid'] in jitems_uid:
+			#	print "\t", it['id'], it['uid']
+				continue
+		#	svc=unit/update_unique_id&params={"itemId":<long>, "uniqueId":<text new unique ID>}
+			j = 0
+			for suid in items_uid:
+				if it['uid'] in suid:	break
+				j += 1
+			del items_uid[j]
+			if suid == it['uid']:	continue
+			print "D\t", it['id'], it['uid'], suid
+			data = {'sid': sid, 'svc': 'unit/update_unique_id', 'params':{"itemId": it['id'], "uniqueId": "%s" % suid}}
+	#		print data
+			fres, sres = twlp.requesr(data)
+			print fres, sres, data
+	print "UIDs:\t", items_uid
+	items_id = []
 	request = {'wsid': sid, 'hwTypeId': 29, 'creatorId': 31,}
-	for suid in items_id:
+	for suid in items_uid:
 		if not suid.isdigit():	continue
 		request['uid'] = suid
 	#	request['wusid']
 		request['name'] = "EGTS-%s" % suid[-8:]
-		print request
+	#	print request
 		fres, sres = create_unit (request, 1)
 		if fres:
+			items_id.append(sres['item']['id'])
 			time.sleep(2)
 			create_unit (request, 2, sres)
 		print fres, sres 
-		break
-	group_id = 245	# 'Вторя Test'
-	add_into_group (sid, group_id, units = tems_id)
+	#	break
+	print "IDs:\t", items_id
+	group_id = GID_2Test	# 'Вторя Test'
+	add_into_group (sid, group_id, units = items_id)
 
 def	check_receved_log (fileLog):
 	""" Проверка наличия объектов Вне системы (стучатся не описаны) 	"""
 	fileTmp = r"/tmp/Received.ID.log"
-	cmd = "tail -n 22 %s | grep Received > %s" % (fileLog, fileTmp)
-#	cmd = "fgrep Received /home/wialon/wlocal/logs/*.log | tail > %s" % fileTmp
+#	cmd = "tail -n 22 %s | grep Received > %s" % (fileLog, fileTmp)
+	cmd = "fgrep Received /home/wialon/wlocal/logs/egts.log | tail > %s" % fileTmp
 #	print cmd
 	os.system (cmd)
 	f = open (fileTmp, 'r')
@@ -414,18 +416,37 @@ def	check_receved_log (fileLog):
 		if not idd in list_idd:		list_idd.append(idd)
 		print unit, idd
 	if (list_idd):	check_doube_items (list_idd)
-	print "#"*22
+
+def	out_pos (obj, **keywords):
+	not_pos = []
+	curr_tm = time.time()
+	for item in obj['items']:
+		print "%6d '%s'\t" % (item['id'], item['nm'].encode('UTF-8')) ,
+		if not item['pos']:
+			not_pos.append(item['id'])
+			print item['pos']
+		else:
+			tm = item['pos']['t']
+			print " %9.5f %9.5f %6.1f\t%s" %(item['pos']['x'], item['pos']['y'], item['pos']['z'], time.strftime("%Y-%m-%d %T", time.localtime(item['pos']['t'])))
+			if (curr_tm - tm) > 30*24*3600:	not_pos.append(item['id'])
+	print "#"*22, not_pos
+	if not_pos:
+		add_into_group (sid, GID_noData, units = not_pos)
 
 def	outhelp():
 	print "outhelp", sys.argv
 	print """
+	-i	Поиск и добавление активного оборудования (hwType = EGTS)
+	-t	Test (проверка наличия соединения с сервером)
+	-U	Список пользователей 
 	-u	описания для тип [ avl_unit | avl_unit_group | avl_resource ]
+	-w	Список оборудования hwTypes
 	"""
 	sys.exit()
 
 if __name__ == "__main__":
 	sttmr = time.time()
-	print "Start %i" % os.getpid(), sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
+	print "Start PID: %i\t" % os.getpid(), sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
 	FlTesr =	False
 	FlHWTyps =	False
 	FlUsers =	False
@@ -448,8 +469,11 @@ if __name__ == "__main__":
 
 		main ({'shstat': 'connect'})
 		if FlTesr:
+			'''
 			add_into_group (sid, 245, [261, 254, 250, 259, 258, 257])
 			for k in list_unit_groups.keys():	print "%4d\t" % k,  list_unit_groups[k]
+			'''
+			get_items ({'wsid': sid}, 'avl_unit', func = out_pos, flags = 0x0401)
 			sys.exit()
 		print "#"*22
 		if FlHWTyps:	main ({'shstat': 'get_hw_types', 'wsid': sid}) 
