@@ -336,9 +336,10 @@ def	main (request):
 		exc_type, exc_value = sys.exc_info()[:2]
 		print "~error|<span class='error'>EXCEPT:", exc_type, exc_value, "</span>"
 
+HW_EGTS =	29
 def	check_doube_items (items_uid):
 	""" Проверка старых UID (дублей), Создание (добавление) новых avl_unit 	"""
-	print items_uid
+	print "UIDs:\t", items_uid
 	fres, sres = twlp.requesr({'svc': 'token/login', 'params': "{'token':'%s'}" % twlp.usr2token['wialon']})
 	if not fres:
 		print sres
@@ -346,7 +347,7 @@ def	check_doube_items (items_uid):
 	usr = sres['au']
 	sid = sres['eid']
 	usid = sres['user']['id']
-	print "D"*22, usr, sid, usid
+#	print "D"*22, usr, sid, usid
 	flags = 0x0101
 	data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':flags,'from':0,'to':0}}
 	fres, sres = twlp.requesr(data)
@@ -354,21 +355,25 @@ def	check_doube_items (items_uid):
 		print sres
 		return	False
 	jitems_uid = ":".join(items_uid)
-	print jitems_uid
+#	print jitems_uid
 	for it in sres['items']:
-		if it['hw'] == 29:	# EGTS
-			if not it['uid'] in jitems_uid:
+		jhw_type = HW_EGTS
+		if it['hw'] == jhw_type:	#29:	# EGTS
+			juid = it['uid'].encode('UTF-8')
+			if not juid in jitems_uid:
 			#	print "\t", it['id'], it['uid']
 				continue
 		#	svc=unit/update_unique_id&params={"itemId":<long>, "uniqueId":<text new unique ID>}
 			j = 0
 			for suid in items_uid:
-				if it['uid'] in suid:	break
+				if juid in suid:	break
 				j += 1
 			del items_uid[j]
-			if suid == it['uid']:	continue
-			print "D\t", it['id'], it['uid'], suid
-			data = {'sid': sid, 'svc': 'unit/update_unique_id', 'params':{"itemId": it['id'], "uniqueId": "%s" % suid}}
+			if suid == juid:	continue
+			print "D\t", it['id'], juid, it['nm'].encode('UTF-8'), suid
+			### {"params":[{"svc":"unit/update_device_type","params":{"itemId":118,"deviceTypeId":"29","uniqueId":"863591027131527"}}],"flags":0}
+			data = {'sid': sid, 'svc': 'unit/update_device_type', 'params':{"deviceTypeId": jhw_type, "itemId": it['id'], "uniqueId": "%s" % suid}}
+		#	data = {'sid': sid, 'svc': 'unit/update_unique_id', 'params':{"itemId": it['id'], "uniqueId": "%s" % suid}}
 	#		print data
 			fres, sres = twlp.requesr(data)
 			print fres, sres, data
@@ -408,7 +413,8 @@ def	check_receved_log (fileLog):
 	list_idd = []
 	for s in fs:
 		ss = s.strip()
-		if not ss:	continue
+		if not ss:		continue
+		if '115149' == ss[:6]:	continue	# Бракованный ID
 		ls = s.split()
 		if 'ID:' in ls:
 			unit = ls[ls.index('ID:') -1]
@@ -475,7 +481,7 @@ if __name__ == "__main__":
 			'''
 			get_items ({'wsid': sid}, 'avl_unit', func = out_pos, flags = 0x0401)
 			sys.exit()
-		print "#"*22
+		print "#"*22, sys.argv[1:]
 		if FlHWTyps:	main ({'shstat': 'get_hw_types', 'wsid': sid}) 
 		if FlUsers:	main ({'shstat': 'get_users', 'wsid': sid})
 		if FlOUnits:
