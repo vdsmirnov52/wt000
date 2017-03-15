@@ -413,17 +413,19 @@ def	check_receved_log (fileLog):
 	list_idd = []
 	for s in fs:
 		ss = s.strip()
-		if not ss:		continue
-		if '115149' == ss[:6]:	continue	# Бракованный ID
+		if not ss:			continue
 		ls = s.split()
 		if 'ID:' in ls:
 			unit = ls[ls.index('ID:') -1]
 			idd = ls[ls.index('ID:') +1]
+			if idd[:6] in "115149:116118":	continue	# Бракованный ID
 		if not idd in list_idd:		list_idd.append(idd)
 		print unit, idd
 	if (list_idd):	check_doube_items (list_idd)
 
 def	out_pos (obj, **keywords):
+	""" Показать последние (текущие) координаты объектов.
+	Добавление в группу 'No Data' если нет данных более 30 дней.	"""
 	not_pos = []
 	curr_tm = time.time()
 	for item in obj['items']:
@@ -446,6 +448,7 @@ def	outhelp():
 	-t	Test (проверка наличия соединения с сервером)
 	-U	Список пользователей 
 	-u	описания для тип [ avl_unit | avl_unit_group | avl_resource ]
+	-p	Показать координаты, добавить в группу 'No Data'
 	-w	Список оборудования hwTypes
 	"""
 	sys.exit()
@@ -458,6 +461,7 @@ if __name__ == "__main__":
 	FlUsers =	False
 	FlOUnits =	False
 	FlgetLog =	False
+	FlNoData = 	False
 	itemTypes = ['avl_unit', 'avl_unit_group', 'avl_resource']
 	try:
 		optlist, args = getopt.getopt(sys.argv[1:], 'thwUu:i:')
@@ -466,6 +470,7 @@ if __name__ == "__main__":
 			if o[0] == '-t':	FlTesr = True
 			if o[0] == '-w':	FlHWTyps = True
 			if o[0] == '-U':	FlUsers = True
+			if o[0] == '-t':	FlNoData = True
 			if o[0] == '-u':
 				FlOUnits = True
 				itemType = o[1]
@@ -478,10 +483,11 @@ if __name__ == "__main__":
 			'''
 			add_into_group (sid, 245, [261, 254, 250, 259, 258, 257])
 			for k in list_unit_groups.keys():	print "%4d\t" % k,  list_unit_groups[k]
-			'''
 			get_items ({'wsid': sid}, 'avl_unit', func = out_pos, flags = 0x0401)
+			'''
 			sys.exit()
 		print "#"*22, sys.argv[1:]
+		if FlNoData:	get_items ({'wsid': sid}, 'avl_unit', func = out_pos, flags = 0x0401)
 		if FlHWTyps:	main ({'shstat': 'get_hw_types', 'wsid': sid}) 
 		if FlUsers:	main ({'shstat': 'get_users', 'wsid': sid})
 		if FlOUnits:
