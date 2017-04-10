@@ -73,15 +73,10 @@ def	perror (ecod):
 		
 sess =	None
 account =	None
-'''
-usr2token = {	# //wialon.rnc52.ru
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8192DDC96D305E8D3DF46DB94C181C5CCC475A14D",
-	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c20CC0FBBD482F98A98F12DE39D18B65B26FC92C7A",
-	}
-'''
+
 usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8173A70E00F093CE9B2EB94FAB7A3D530377F71D5",
-	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6",
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af80A738B78F105351D235FA62509D5C3F81052DFB1",
+	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c28D24446CC79C63C115142B1313DFD2A86DFFAF5B",
 	}
 # wialon	http://wialon.rnc52.ru/login.html?access_token=1d5a4a6ab2bde440204e6bd1d53b3af8192DDC96D305E8D3DF46DB94C181C5CCC475A14D&svc_error=0
 # V.Smirnov	http://wialon.rnc52.ru/login.html?svc_error=7&access_token=c5a76d06f77af04aa4c9fa0699d465c20CC0FBBD482F98A98F12DE39D18B65B26FC92C7A&svc_error=0

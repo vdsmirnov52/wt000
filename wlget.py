@@ -52,7 +52,7 @@ def	select_users (obj, **keywords):
 		keywords [ iddom ='DOM', sid='Id', snm='Name', on='onchange="..."' ]
 	"""
 	print "~log| select_users", keywords
-	out_json (obj)
+#	out_json (obj)
 	if keywords.has_key('iddom'):
 		print "~%s|" % keywords['iddom']
 	else:	print "~log|"
@@ -262,6 +262,8 @@ def	create_unit(request, step = 1, sres = None):
 GID_noData =	256
 GID_2Test =	245
 GID_1Test =	36
+GID_Virtual =	657	#353469047066127
+GID_VDS =	2220
 
 list_unit_groups = {}	# 
 
@@ -382,6 +384,7 @@ def	check_doube_items (items_uid):
 	request = {'wsid': sid, 'hwTypeId': 29, 'creatorId': 31,}
 	for suid in items_uid:
 		if not suid.isdigit():	continue
+		if suid[-8:] == '0':	continue
 		request['uid'] = suid
 	#	request['wusid']
 		request['name'] = "EGTS-%s" % suid[-8:]
@@ -394,14 +397,18 @@ def	check_doube_items (items_uid):
 		print fres, sres 
 	#	break
 	print "IDs:\t", items_id
+	'''
 	group_id = GID_2Test	# 'Вторя Test'
+	group_id = GID_Virtual
+	'''
+	group_id = GID_VDS
 	add_into_group (sid, group_id, units = items_id)
 
 def	check_receved_log (fileLog):
 	""" Проверка наличия объектов Вне системы (стучатся не описаны) 	"""
 	fileTmp = r"/tmp/Received.ID.log"
 #	cmd = "tail -n 22 %s | grep Received > %s" % (fileLog, fileTmp)
-	cmd = "fgrep Received /home/wialon/wlocal/logs/egts.log | tail > %s" % fileTmp
+	cmd = "fgrep Received /home/wialon/wlocal/logs/egts.log | tail -n 22 > %s" % fileTmp
 #	print cmd
 	os.system (cmd)
 	f = open (fileTmp, 'r')
@@ -418,6 +425,7 @@ def	check_receved_log (fileLog):
 		if 'ID:' in ls:
 			unit = ls[ls.index('ID:') -1]
 			idd = ls[ls.index('ID:') +1]
+			if not idd.isdigit():		continue
 			if idd[:6] in "115149:116118":	continue	# Бракованный ID
 		if not idd in list_idd:		list_idd.append(idd)
 		print unit, idd
@@ -441,6 +449,11 @@ def	out_pos (obj, **keywords):
 	if not_pos:
 		add_into_group (sid, GID_noData, units = not_pos)
 
+#	svc=unit/update_access_password&params={"itemId":<long>,"accessPassword":<text>}
+def	update_apasswd (opt):
+	print "update_apasswd", opt
+	sys.exit()
+
 def	outhelp():
 	print "outhelp", sys.argv
 	print """
@@ -450,6 +463,7 @@ def	outhelp():
 	-u	описания для тип [ avl_unit | avl_unit_group | avl_resource ]
 	-p	Показать координаты, добавить в группу 'No Data'
 	-w	Список оборудования hwTypes
+	-P	Пароль доступа к объекту
 	"""
 	sys.exit()
 
@@ -464,8 +478,11 @@ if __name__ == "__main__":
 	FlNoData = 	False
 	itemTypes = ['avl_unit', 'avl_unit_group', 'avl_resource']
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'thwUu:i:')
+		optlist, args = getopt.getopt(sys.argv[1:], 'thwUu:i:P:')
+		if not optlist:	outhelp()
+
 		for o in optlist:
+			if o[0] == '-P':	update_apasswd (o[1:])
 			if o[0] == '-h':	outhelp()
 			if o[0] == '-t':	FlTesr = True
 			if o[0] == '-w':	FlHWTyps = True
