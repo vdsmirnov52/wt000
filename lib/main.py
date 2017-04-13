@@ -17,14 +17,37 @@ def	rel_css (ssrc):
 
 jsList = [r"//code.jquery.com/jquery-latest.min.js", r"//wialon.rnc52.ru/wsdk/script/wialon.js", r"/wjs/wialon_login.js", r"/wjs/wialon_units.js",
 	r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js']
-jsLocal =  """<script type='text/javascript'>
-	$(document).ready(function () {
+import	twlp
+tokens = []
+for k in twlp.usr2token.keys():	tokens.append("{name: '%s', token: '%s'}" % (k, twlp.usr2token[k]))
+#jsLocal =  """<script type='text/javascript'>
+jsLocal =  """$(document).ready(function () {
 	$.ajaxSetup({ url: "w.cgi?this=ajax", type: "post", error: onAjaxError, success: onAjaxSuccess, timeout: 30000 });
 	$('#dbody').css({'height': (-210 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});
 	$('#div_table').css({'height': (-333 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});
 	$('#log').css({'height': '100px', 'overflow': 'auto'});
 	init_users();
-	})
+})
+/////////////////////////////////////////////
+function msg(text) { $("#log").prepend(text + "<br/>"); }
+
+function init_users() {
+	for (var i = 0; i < users_token.length; i++){
+		var u = users_token[i];
+		$("#users").append("<option value='"+ u.token +"'>"+ u.name + "</option>");
+	}
+	$("#users").change( getSelectedUnitInfo );
+}
+function sel_users() {
+	if ($('#users').val()) {
+		$("#log").html('');
+		logout();
+		$('#token').val($('#users').val());
+		$('#ttoken').html($('#users').val());
+		setTimeout(login, 200);
+	}
+}"""
+jsTests = """
 	function	set_shadow (shstat) {	$.ajax({data: 'shstat='+ shstat +'&' +$('form').serialize()});	}
 //	function	add_row(tabname) {	$.ajax({data: 'shstat=add_row&table='+ tabname +'&' +$('form').serialize()});	}
 	function	set_message(txt) {	$('#message').html(txt);	}
@@ -56,30 +79,7 @@ function	create_auto () {
 	if (check_form_auto()) {
 		alert('Ok! creatorId: ' + $('#creatorId').val()); set_shadow('create_unit');
 	}
-}
-/////////////////////////////////////////////
-function msg(text) { $("#log").prepend(text + "<br/>"); }
-var	users_token = [
-	{name: "wialon",	token:	"1d5a4a6ab2bde440204e6bd1d53b3af891F531BAA376794D25274B3EAD44CAF9BACCD247"},
-	{name: "V.Smirnov",	token:	"c5a76d06f77af04aa4c9fa0699d465c2A1C15592645215DBA63B6D2A21AE9A379DB51D75"},
-	]
-function init_users() {
-	for (var i = 0; i < users_token.length; i++){
-		var u = users_token[i];
-		$("#users").append("<option value='"+ u.token +"'>"+ u.name + "</option>");
-	}
-	$("#users").change( getSelectedUnitInfo );
-}
-function sel_users() {
-	if ($('#users').val()) {
-		$("#log").html('');
-		logout();
-		$('#token').val($('#users').val());
-		$('#ttoken').html($('#users').val());
-		setTimeout(login, 200);
-	}
-}
-	</script>"""
+}	"""
 
 def	out_head (title = None):
 	code_ssys = -1
@@ -139,7 +139,7 @@ def	out_form_auto ():
 def	perror (tit = None, txt = None):
 	if not tit:	tit = ''
 	print	"<div class='error'><b>%s</b> %s</div>" % (str(tit), str(txt))
-
+'''
 def	new_widow (request, conf):
 	global	CONFIG
 	CONFIG = conf
@@ -163,6 +163,7 @@ def	new_widow (request, conf):
 		print "<span style='background-color: #ffa; color: #a00; padding: 4px;'> EXCEPT new_widow:", exc_type, exc_value, "</span>"
 	finally:
 		print "</form></body></html>"
+'''
 
 def	main (request, conf):
 	global	CONFIG
@@ -173,7 +174,8 @@ def	main (request, conf):
 		rel_css ((r'/css/style.css', r'/css/calendar.css'))
 		jscripts(jsList)
 	#	jscripts ((r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js'))
-		print jsLocal, "</head>"
+	#	print jsLocal, "</head>"
+		print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(tokens), jsTests, "</script></head>"])
 		print "<body>"
 		print """<form name='myForm' action='/cgi/w.cgi' method='post'><fieldset class='hidd'>
 			<!--input name='wuser' type='hidden' id='wuser' /-->
