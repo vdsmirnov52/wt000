@@ -267,29 +267,38 @@ GID_VDS =	2220
 
 list_unit_groups = {}	# 
 
-def	add_into_group (sid, group_id, units = None):
+def	add_into_group (sid, group_id, units = None, del_units = None):
 	""" Добавить units в группу group_id	"""
 	global	list_unit_groups
 #	group_id = GID_2Test	# Добавить itemId в Группу 'Вторя Test'
-	if not units:	return
-	if not list_unit_groups:
-		get_items ({'wsid': sid}, 'avl_unit_group', func = get_unit_from_group)
+	if not units:			units = []	#return
+	if not del_units:		del_units = []
+	if not (units and del_units):	return
+	if not list_unit_groups:	get_items ({'wsid': sid}, 'avl_unit_group', func = get_unit_from_group)
+
 	units_list = []
 	units_old = list_unit_groups[group_id]
 	while True:
 		if units and units_old:
 			if units[0] > units_old[0]:
-				units_list.append(units_old.pop(0))
+				unid = units_old.pop(0)
+				if unid not in del_units:
+					units_list.append(unid)	#units_old.pop(0))
+				else:	print "unid\t", unid
 			elif units[0] < units_old[0]:
 				units_list.append(units.pop(0))
 			else:
 				units_list.append(units.pop(0))
-				del units_old[0]
+				print "==\t", units_old.pop(0) 
+			#	del units_old[0]
 		elif units:
 			for i in units:		units_list.append(i)
 			break
 		elif units_old:
-			for i in units_old:	units_list.append(i)
+			for i in units_old:
+				if i not in del_units:
+					units_list.append(i)
+				else:	print "i\t", i
 			break
 	data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": group_id, "units": units_list}}
 	fres, sres = twlp.requesr(data)
@@ -435,6 +444,7 @@ def	out_pos (obj, **keywords):
 	""" Показать последние (текущие) координаты объектов.
 	Добавление в группу 'No Data' если нет данных более 30 дней.	"""
 	not_pos = []
+	is_data = []
 	curr_tm = time.time()
 	for item in obj['items']:
 		print "%6d '%s'\t" % (item['id'], item['nm'].encode('UTF-8')) ,
@@ -444,10 +454,12 @@ def	out_pos (obj, **keywords):
 		else:
 			tm = item['pos']['t']
 			print " %9.5f %9.5f %6.1f\t%s" %(item['pos']['x'], item['pos']['y'], item['pos']['z'], time.strftime("%Y-%m-%d %T", time.localtime(item['pos']['t'])))
-			if (curr_tm - tm) > 30*24*3600:	not_pos.append(item['id'])
+			if (curr_tm - tm) > 30*24*3600:
+				not_pos.append(item['id'])
+			else:	is_data.append(item['id'])
 	print "#"*22, not_pos
 	if not_pos:
-		add_into_group (sid, GID_noData, units = not_pos)
+		add_into_group (sid, GID_noData, units = not_pos, del_units = is_data)
 
 #	svc=unit/update_access_password&params={"itemId":<long>,"accessPassword":<text>}
 def	update_apasswd (opt):
@@ -478,7 +490,7 @@ if __name__ == "__main__":
 	FlNoData = 	False
 	itemTypes = ['avl_unit', 'avl_unit_group', 'avl_resource']
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'thwUu:i:P:')
+		optlist, args = getopt.getopt(sys.argv[1:], 'thwpUu:i:P:')
 		if not optlist:	outhelp()
 
 		for o in optlist:
@@ -487,7 +499,7 @@ if __name__ == "__main__":
 			if o[0] == '-t':	FlTesr = True
 			if o[0] == '-w':	FlHWTyps = True
 			if o[0] == '-U':	FlUsers = True
-			if o[0] == '-t':	FlNoData = True
+			if o[0] == '-p':	FlNoData = True
 			if o[0] == '-u':
 				FlOUnits = True
 				itemType = o[1]
