@@ -65,7 +65,9 @@ def	save_pkl (objpkl, filename = r"./conf/RNIC_atts.pkl"):
 
 
 def	get_pkl (filename = r"./conf/RNIC_atts.pkl"):
-	if not os.path.isfile (filename):	return 
+	if not os.path.isfile (filename):
+		print "Отсутствует файл '%s'" % filename
+		return 
 	fid = open (filename, 'r+b')
 	objpkl = pickle.load(fid)
 	return	objpkl

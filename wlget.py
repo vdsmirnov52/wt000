@@ -215,7 +215,7 @@ def	create_unit(request, step = 1, sres = None):
 		params.append ({"svc":"unit/update_device_type","params":{"itemId": itemId,"deviceTypeId": hwTypeId,"uniqueId": UID}})
 	#	if request.has_key('uid') and request['uid'].strip():
 		ph = ph2 = passwd = ""
-		if request.has_key('ph0') and request['ph0'].strip():		ph = request['ph0'].strip()
+		if request.has_key('ph') and request['ph'].strip():		ph = request['ph'].strip()
 		if request.has_key('ph2') and request['ph2'].strip():		ph2 = request['ph2'].strip()
 		if request.has_key('passwd') and request['passwd'].strip():	passwd = request['passwd'].strip()
 		params.append ({"svc":"unit/update_phone","params":{"itemId": itemId,"phoneNumber": ph}})
@@ -238,11 +238,20 @@ def	create_unit(request, step = 1, sres = None):
 		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"brand", "v": brand}})
 		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"model", "v": model}})
 		params.append ({"svc":"item/update_profile_field", "params":{"itemId": itemId, "n":"year", "v": year}})
+	#	out_json (params)	
+		data = {'sid': sid, 'svc': 'core/batch', "params": params, "flags":0}
+		fres, sres = twlp.requesr(data)
+		if not fres:
+			print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
+			out_json(data, iddom = 'clog')
+	#		print fres, sres
+			return
 
+	elif step == 3:
 		### Произвольные поля
 	#	svc=item/update_admin_field&params={"itemId":<long>, "id":<long>,"callMode":(create, update, delete), "n":<text>, "v":<text>}
 		j = 0
-		for n in ['oinn', 'odog']:	# Имена полей в форме 
+		for n in ['oinn', 'odog', 'vid', 'pg']:	# Имена полей в форме 
 			v = ""
 			if request.has_key(n) and request[n].strip():	v = request[n].strip()
 			params.append ({"svc":"item/update_admin_field","params":{"itemId": itemId, "id": j, "n": n, "v": v, "callMode":"create"}})
@@ -254,26 +263,26 @@ def	create_unit(request, step = 1, sres = None):
 		if not fres:
 			print "<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 			out_json(data, iddom = 'clog')
+	#		print fres, sres
 			return
-		print fres, sres
 	else:	print "~error|", request
 
 ###	ID avl_unit_group
 GID_noData =	256
 GID_2Test =	245
 GID_1Test =	36
-GID_Virtual =	657	#353469047066127
-GID_VDS =	2220
+#GID_Virtual =	657	#353469047066127
+#GID_VDS =	2220
 
 list_unit_groups = {}	# 
 
 def	add_into_group (sid, group_id, units = None, del_units = None):
 	""" Добавить units в группу group_id	"""
 	global	list_unit_groups
-#	group_id = GID_2Test	# Добавить itemId в Группу 'Вторя Test'
+
 	if not units:			units = []	#return
 	if not del_units:		del_units = []
-	if not (units and del_units):	return
+	if not (units or del_units):	return
 	if not list_unit_groups:	get_items ({'wsid': sid}, 'avl_unit_group', func = get_unit_from_group)
 
 	units_list = []
@@ -299,6 +308,9 @@ def	add_into_group (sid, group_id, units = None, del_units = None):
 				if i not in del_units:
 					units_list.append(i)
 				else:	print "i\t", i
+			break
+		else:
+			print "Not units in groups by ID:", group_id, "units:", units, "del_units:", del_units, "units_old:", units_old
 			break
 	data = {'sid': sid, 'svc': "unit_group/update_units", "params": {"itemId": group_id, "units": units_list}}
 	fres, sres = twlp.requesr(data)
@@ -335,8 +347,10 @@ def	main (request):
 			elif shstat == 'create_unit':
 				fres, sres = create_unit (request, 1)
 				if fres:
-					time.sleep(2)
-					create_unit (request, 2, sres)
+					time.sleep(1)
+					print	create_unit (request, 2, sres)
+					time.sleep(1)
+					print	create_unit (request, 3, sres)
 				else:	print "~error|<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 			else:
 				print "~eval|alert ('Unknown shstat: [%s]!');" % request ['shstat']
@@ -348,7 +362,7 @@ def	main (request):
 		print "~error|<span class='error'>EXCEPT:", exc_type, exc_value, "</span>"
 
 HW_EGTS =	29
-def	check_doube_items (items_uid):
+def	check_doube_items (items_uid, dict_atts):
 	""" Проверка старых UID (дублей), Создание (добавление) новых avl_unit 	"""
 	print "UIDs:\t", items_uid
 	fres, sres = twlp.requesr({'svc': 'token/login', 'params': "{'token':'%s'}" % twlp.usr2token['wialon']})
@@ -358,7 +372,6 @@ def	check_doube_items (items_uid):
 	usr = sres['au']
 	sid = sres['eid']
 	usid = sres['user']['id']
-#	print "D"*22, usr, sid, usid
 	flags = 0x0101
 	data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':flags,'from':0,'to':0}}
 	fres, sres = twlp.requesr(data)
@@ -371,53 +384,72 @@ def	check_doube_items (items_uid):
 		jhw_type = HW_EGTS
 		if it['hw'] == jhw_type:	#29:	# EGTS
 			juid = it['uid'].encode('UTF-8')
-			if not juid in jitems_uid:
-			#	print "\t", it['id'], it['uid']
-				continue
-		#	svc=unit/update_unique_id&params={"itemId":<long>, "uniqueId":<text new unique ID>}
+			if juid and not juid in jitems_uid:	continue
+			# Найден дубликат uid 
+			#print "Double\t", it['id'], juid, it['nm'].encode('UTF-8'), suid
+			print "Double\t", it['id'], juid, it['nm']
+			del dict_atts[juid]
+			'''
 			j = 0
 			for suid in items_uid:
 				if juid in suid:	break
 				j += 1
 			del items_uid[j]
 			if suid == juid:	continue
-			print "D\t", it['id'], juid, it['nm'].encode('UTF-8'), suid
+		#	svc=unit/update_unique_id&params={"itemId":<long>, "uniqueId":<text new unique ID>}
 			### {"params":[{"svc":"unit/update_device_type","params":{"itemId":118,"deviceTypeId":"29","uniqueId":"863591027131527"}}],"flags":0}
 			data = {'sid': sid, 'svc': 'unit/update_device_type', 'params':{"deviceTypeId": jhw_type, "itemId": it['id'], "uniqueId": "%s" % suid}}
 		#	data = {'sid': sid, 'svc': 'unit/update_unique_id', 'params':{"itemId": it['id'], "uniqueId": "%s" % suid}}
-	#		print data
+			print data
 			fres, sres = twlp.requesr(data)
 			print fres, sres, data
-	print "UIDs:\t", items_uid
+			'''
+	print "UIDs:\t", dict_atts.keys()
 	items_id = []
 	request = {'wsid': sid, 'hwTypeId': 29, 'creatorId': 31,}
-	for suid in items_uid:
+	for suid in dict_atts.keys():	#items_uid:
 		if not suid.isdigit():	continue
 		if suid[-8:] == '0':	continue
 		request['uid'] = suid
+		print dict_atts[suid].keys()
 	#	request['wusid']
-		request['name'] = "EGTS-%s" % suid[-8:]
-	#	print request
+		request['name'] = dict_atts[suid]['nm']	#"EGTS-%s" % suid[-8:]
+		request['ph'] = dict_atts[suid]['ph']
+		request['ph2'] = dict_atts[suid]['ph2']
+		request['vid'] = dict_atts[suid]['vid']
+		request['pg'] = dict_atts[suid]['pg']
+		'''
+		print request
+		'''
 		fres, sres = create_unit (request, 1)
 		if fres:
+			print sres['item']['nm']
 			items_id.append(sres['item']['id'])
 			time.sleep(2)
 			create_unit (request, 2, sres)
-		print fres, sres 
-	#	break
+	#	print fres, sres
+
 	print "IDs:\t", items_id
 	'''
-	group_id = GID_2Test	# 'Вторя Test'
+	return	# DEBUG
 	group_id = GID_Virtual
-	'''
 	group_id = GID_VDS
+	group_id = GID_2Test	# 'Вторя Test'
+	'''
+	group_id = GID_1Test
 	add_into_group (sid, group_id, units = items_id)
+
+import	rnic_atts
 
 def	check_receved_log (fileLog):
 	""" Проверка наличия объектов Вне системы (стучатся не описаны) 	"""
+	atts = rnic_atts.get_pkl()	# Описание машины в РНИС
+	atts_keys = atts.keys()
+	if not atts:	return
+		
 	fileTmp = r"/tmp/Received.ID.log"
 #	cmd = "tail -n 22 %s | grep Received > %s" % (fileLog, fileTmp)
-	cmd = "fgrep Received /home/wialon/wlocal/logs/egts.log | tail -n 22 > %s" % fileTmp
+	cmd = "fgrep Received /home/wialon/wlocal/logs/egts.log | tail -n 11 > %s" % fileTmp
 #	print cmd
 	os.system (cmd)
 	f = open (fileTmp, 'r')
@@ -427,6 +459,7 @@ def	check_receved_log (fileLog):
 		return
 	fs = ffs.split('\n')
 	list_idd = []
+	dict_atts = {}
 	for s in fs:
 		ss = s.strip()
 		if not ss:			continue
@@ -436,9 +469,19 @@ def	check_receved_log (fileLog):
 			idd = ls[ls.index('ID:') +1]
 			if not idd.isdigit():		continue
 			if idd[:6] in "115149:116118":	continue	# Бракованный ID
-		if not idd in list_idd:		list_idd.append(idd)
+		if not idd in list_idd:
+			list_idd.append(idd)
+			if idd in atts_keys:
+				dict_atts[idd] = atts[idd]
 		print unit, idd
-	if (list_idd):	check_doube_items (list_idd)
+	print list_idd
+	for k in list_idd:
+		if not dict_atts.has_key(k):	print k
+		else:
+			print k, dict_atts[k]['nm'], dict_atts[k]['pg']
+	dict_atts_keys = dict_atts.keys()
+	if dict_atts_keys:	check_doube_items (dict_atts_keys, dict_atts)
+#	if (list_idd):	check_doube_items (list_idd)
 
 def	out_pos (obj, **keywords):
 	""" Показать последние (текущие) координаты объектов.
@@ -496,10 +539,10 @@ if __name__ == "__main__":
 		for o in optlist:
 			if o[0] == '-P':	update_apasswd (o[1:])
 			if o[0] == '-h':	outhelp()
-			if o[0] == '-t':	FlTesr = True
-			if o[0] == '-w':	FlHWTyps = True
-			if o[0] == '-U':	FlUsers = True
-			if o[0] == '-p':	FlNoData = True
+			if o[0] == '-t':	FlTesr =	True
+			if o[0] == '-w':	FlHWTyps =	True
+			if o[0] == '-U':	FlUsers =	True
+			if o[0] == '-p':	FlNoData =	True
 			if o[0] == '-u':
 				FlOUnits = True
 				itemType = o[1]
@@ -509,8 +552,8 @@ if __name__ == "__main__":
 
 		main ({'shstat': 'connect'})
 		if FlTesr:
+			add_into_group (sid, 36, [336, 337])
 			'''
-			add_into_group (sid, 245, [261, 254, 250, 259, 258, 257])
 			for k in list_unit_groups.keys():	print "%4d\t" % k,  list_unit_groups[k]
 			get_items ({'wsid': sid}, 'avl_unit', func = out_pos, flags = 0x0401)
 			'''
