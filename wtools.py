@@ -71,20 +71,15 @@ def	perror (ecod):
 		print "\tERR:", err_dict[ecod]
 	except:	print "cod =", ecod
 		
-sess =	None
+sess =		None	# sid - Session Identificator
 account =	None
 
 usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af80A738B78F105351D235FA62509D5C3F81052DFB1",
-	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c28D24446CC79C63C115142B1313DFD2A86DFFAF5B",
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8620F22673AA380EB6248F7D4DAE4A476F082A6DB",	# 2017.06.27
+	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c231F50E8A41E3D339E9E590B13CE9C0FB20F5CCE0",	# 2017.06.27
 	}
-# wialon	http://wialon.rnc52.ru/login.html?access_token=1d5a4a6ab2bde440204e6bd1d53b3af8192DDC96D305E8D3DF46DB94C181C5CCC475A14D&svc_error=0
-# V.Smirnov	http://wialon.rnc52.ru/login.html?svc_error=7&access_token=c5a76d06f77af04aa4c9fa0699d465c20CC0FBBD482F98A98F12DE39D18B65B26FC92C7A&svc_error=0
 
-# wialon	http://test-wialon.rnc52.ru/login.html?access_token=1d5a4a6ab2bde440204e6bd1d53b3af8675A1AAA19667E045F5188C6A642D87C90FAF956&svc_error=0
-# V.Smirnov	http://test-wialon.rnc52.ru/login.html?access_token=c5a76d06f77af04aa4c9fa0699d465c2D20A5642AD84A98052B6D465F7BC14EA75F7E6A6&svc_error=0
-
-url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'1d5a4a6ab2bde440204e6bd1d53b3af8173A70E00F093CE9B2EB94FAB7A3D530377F71D5'}"
+url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'%s'}" % usr2token['wialon']
 def	login (token = None):
 	global	sess
 	if not token:
@@ -96,6 +91,21 @@ def	logout(sid):
 	res = json.load(urllib.urlopen(r"http://wialon.rnc52.ru/wialon/ajax.html?svc=core/logout&params={}&sid=%s" % sid))
 	print "\tlogout", res
 
+def	find_key (dct, key):
+	if type(dct) == dict:
+		if dct.has_key(key):
+		#	print "ZZZ", dct[key]
+			return	dct[key]
+		for k in dct.keys():
+			print k
+			rrr = find_key (dct[k], key)
+			if rrr:		return	rrr
+	elif type (dct) == []:
+		for k in dct:
+			rrr = find_key (dct[k], key)
+			if rrr:		return	rrr
+	else:	return	#	pass	#	print type (dct)
+
 def test_login ():
 	print "test_login"
 	for uname in usr2token.keys():
@@ -105,12 +115,13 @@ def test_login ():
 		if  res.has_key('eid'):
 			sid = res['eid']
 			print res['eid']
+		#	print res['user'] 
+			print find_key (res['user'], 'monugr')
 	#		time.sleep(1)
 			logout(sid)
 		elif res.has_key('error'):
 			perror (res['error'])
-		else:
-			print res
+		else:	print "\nRES:", res
 
 if __name__ == "__main__":
 	test_login()
