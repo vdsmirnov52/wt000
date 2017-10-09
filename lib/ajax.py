@@ -223,31 +223,67 @@ def	create_unit(request, step = 2, sres = None):
 		print fres, sres
 	else:	print "~error|", request
 
+def	is_successfully (label, sres):
+	try:
+		sid = sres['eid']
+		usr = sres['au']
+		usid = sres['user']['id']
+		print label, "<span class='bfinf'> successfully </span> SID:", sid, "User:", usr, "UsId:", usid
+		print "~eval|$('#wusid').val('%s'); $('#wuser').html('%s');" % (usid, usr)
+		print "~eval|$('#wsid').val('%s');" % sid	#sres['eid']
+	except:	print label, "<span class='bferr'> Result:</span>", sres
+
+import	urllib
+import	twlp
+
+def	login (request):
+	data = {'svc': 'token/login', 'params': {'token':'%s' % request['users']}}
+	b, sres = twlp.requesr(data, host = request['whost'])
+
+#	url = r"http://%s/wialon/ajax.html?svc=token/login&params={'token':'%s'}" % (request['whost'], request['users'])
+#	sres = json.load(urllib.urlopen(url))
+	if b:	#sres: 
+		is_successfully ('Login:', sres)
+	else:
+		print	"<span class='bferr'>", sres, "</span>"
+	return	sres
+
+def	logout(request):
+	if request.has_key('wsid') and request['wsid'] != '':
+		data = {'svc': 'core/logout', 'sid': request['wsid'], 'params': {}}
+		b, txt = twlp.requesr(data, host = request['whost'])
+		if b:
+			print "<span class='bfinf'>", txt, "</span>"
+		else:	print "<span class='bferr'>", txt, "</span>"
+	else:	print "<span class='bferr'> you are already logouted </span>"
+	return
+	res = json.load(urllib.urlopen(r"http://wialon.rnc52.ru/wialon/ajax.html?svc=core/logout&params={}&sid=%s" % sid))
+	print "\tlogout", res
+
 def	main (SCRIPT_NAME, request, referer):
 	try:
-		print	"~error|~warnn|", os.environ['SERVER_NAME']
-#		print "~shadow|", request
-		print "~log|ajax.maim ", time.time(), request
+		print "~error|~warnn|",# os.environ['SERVER_NAME']
+		print "~shadow|ajax.maim", request
+#		print "~log|ajax.maim ", time.time(), request
 		if request.has_key ('shstat'):
-			shstat = request ['shstat']
+			shstat = request['shstat']
 			if shstat == 'connect':
-				print "~log|connect <span class='tit'>", time.time(), "</span>"
+				print "~log|"
 				import	twlp
-				sres = twlp.send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % twlp.usr2token['wialon']})
-				usr = sres['au']
-				sid = sres['eid']
-				usid = sres['user']['id']
-				print "SID:", usr, usid, sid
-			#	print "~eval|msg('SID: %s')" % sres['eid']
-				print "~eval|$('#wusid').val('%s'); $('#wuser').html('%s');" % (usid, usr)
-				print "~eval|$('#wsid').val('%s');" % sres['eid']
-				print "~eval|set_shadow('get_hw_types');"
-				print "~eval|set_shadow('get_users');"
-	#			print "~eval|alert('usid: ' +%s); $('#creatorId').val(%s);" % (usid, usid)
-				print "~eval|wialon_timerId = setInterval(function() {set_shadow('continue')}, 120000);"
+				sres = twlp.send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % request['token']})	#twlp.usr2token['wialon']})
+				if sres:
+					is_successfully ("Connect:", sres)
+			#		print "~eval|set_shadow('get_users');"
+			#		print "~eval|alert('usid: ' +%s); $('#creatorId').val(%s);" % (usid, usid)
+			#		print "~eval|wialon_timerId = setInterval(function() {set_shadow('continue')}, 120000);"
+			elif shstat == 'login':
+				print "~log|", 	login(request)
 			elif shstat == 'exit':
-				print "~eval|msg('Exit');"
-				print "~eval|$('#wsid').val(''); clearInterval(wialon_timerId);"
+				print "~log|Logout:"
+				if request.has_key('wsid') and request['wsid'] != '':
+					logout(request)
+				else:	print "<span class='bferr'> you are already logouted </span>"
+		#		print "~eval|$('#wsid').val(''); $('#wusid').val(''); $('#wuser').html('');"
 			elif shstat == 'continue':
 				if request.has_key('wsid') and request['wsid']:
 					import	twlp

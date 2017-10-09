@@ -27,15 +27,17 @@ err_dict = {
 	'error':	'Неизвестный код ошибки ',
 	'nores':	'Отсутствует результат ',
 	}
-def	requesr (data):
-	res = send_post(data)
+def	requesr (data, host = None):
+	res = send_post(data, host = host)
 	if res:
-		if type(res) == dict and res.has_key('error'):
+		if type(res) == dict and res.has_key('error') and res['error'] > 0:
 			if err_dict.has_key(res['error']):
-				return (False, err_dict[res['error']])
-			else:	return (False, err_dict['error'] +str(res['error']))
-		else:	return (True, res)
-	else:	return (False, err_dict['nores'])
+				return False, err_dict[res['error']]
+			else:	return False, err_dict['error'] +str(res['error'])
+		elif res.has_key('error') and res['error'] == 0:
+			return True, err_dict[0]
+		else:	return True, res
+	else:	return False, err_dict['nores']
 
 def	upload_wlp(sid, svc):
 	print "upload_wlp", "#"*33, "\n"
@@ -87,11 +89,13 @@ def	upload_wlp(sid, svc):
 #	print "urllib2.Request:\n", res.info()
 	return json.loads(res.read())
 
-def	send_post (pdict = None, pfile = None):
+def	send_post (pdict = None, pfile = None, host = None):
 	if not pdict:	return
 	boundary = '--WebKitFormBoundaryh' + str(int(random.random()*1e10))
 #	url = r"http://wialon.rnc52.ru/wialon/ajax.html"
-	url = r"http://test-wialon.rnc52.ru/wialon/ajax.html"
+	if not host:
+		url = r"http://test-wialon.rnc52.ru/wialon/ajax.html"
+	else:	url = r"http://%s/wialon/ajax.html" % host
 	parts = ['']
 	for k in pdict:
 		parts.append('--' + boundary)
@@ -118,8 +122,8 @@ def	send_post (pdict = None, pfile = None):
 DEBUG = False
 URL =	r"http://test-wialon.rnc52.ru/wialon/ajax.html"
 usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8620F22673AA380EB6248F7D4DAE4A476F082A6DB",
-	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c231F50E8A41E3D339E9E590B13CE9C0FB20F5CCE0",
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af83FC08035B2DE5C5646942B1900BE28862CCE8BEC",
+	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c272899BB584F98F199F951746467AA85947F7A9F5",
 	}
 
 if __name__ == "__main__":
@@ -127,7 +131,7 @@ if __name__ == "__main__":
 #	sres = send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % usr2token['V.Smirnov']})
 	sres = send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % usr2token['wialon']})
 	res = upload_wlp(sres['eid'], 'exchange/import_json')
-	ppp(res)
+#	ppp(res)
 	try:
 		DEBUG = True
 		usr = sres['au']
@@ -138,6 +142,8 @@ if __name__ == "__main__":
 		data ={'sid': sid}
 		data['svc'] = 'core/get_hw_types'
 		data['params'] = { "filterType":"type", "filterValue":["mobile"], "includeType": True }
+		print "ZZZZZZZZZZZZZZZZZ", data
+		os.exit()
 		res = send_post(data)
 		ppp(res, data['svc'])
 		'''

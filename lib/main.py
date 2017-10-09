@@ -4,6 +4,9 @@ import	cgi, os, sys, time, string
 
 LIBRARY_DIR = r"/home/smirnov/Wialon/lib/"
 sys.path.insert(0, LIBRARY_DIR)
+
+import	dbtools, cglob
+
 CONFIG = None
 
 
@@ -15,20 +18,21 @@ def	rel_css (ssrc):
 	for c in ssrc:
 		print "\t<link rel='stylesheet' type='text/css' href='%s' />" % c
 
-jsList = [r"//code.jquery.com/jquery-latest.min.js", r"//wialon.rnc52.ru/wsdk/script/wialon.js", r"/wjs/wialon_login.js", r"/wjs/wialon_units.js",
+jsList = [r'//code.jquery.com/jquery-latest.min.js', r'//wialon.rnc52.ru/wsdk/script/wialon.js', #r'/wjs/wialon_login.js', r'/wjs/wialon_units.js',
 	r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js']
-import	twlp
-tokens = []
-for k in twlp.usr2token.keys():	tokens.append("{name: '%s', token: '%s'}" % (k, twlp.usr2token[k]))
+#import	twlp
+#tokens = []
+#for k in twlp.usr2token.keys():	tokens.append("{name: '%s', token: '%s'}" % (k, twlp.usr2token[k]))
 #jsLocal =  """<script type='text/javascript'>
 jsLocal =  """$(document).ready(function () {
 	$.ajaxSetup({ url: "w.cgi?this=ajax", type: "post", error: onAjaxError, success: onAjaxSuccess, timeout: 30000 });
 	$('#dbody').css({'height': (-210 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});
 	$('#div_table').css({'height': (-333 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});
 	$('#log').css({'height': '100px', 'overflow': 'auto'});
-	init_users();
+//	init_users();
 })
 /////////////////////////////////////////////
+ wialon_timerId = 0
 function msg(text) { $("#log").prepend(text + "<br/>"); }
 
 function init_users() {
@@ -39,13 +43,15 @@ function init_users() {
 	$("#users").change( getSelectedUnitInfo );
 }
 function sel_users() {
-	if ($('#users').val()) {
-		$("#log").html('');
-		logout();
-		$('#token').val($('#users').val());
-		$('#ttoken').html($('#users').val());
-		setTimeout(login, 200);
+	if (document.myForm.whost.value == '') {
+		if (confirm('Не выбран Host!\\nВыбрать test-wialon.rnc52.ru ?')) {
+			document.myForm.whost.value = 'test-wialon.rnc52.ru';
+			document.myForm.set_whost.value = document.myForm.whost.value;
+		} else	return
 	}
+	$('#token').val($('#users').val());
+	$('#ttoken').html($('#users').val());
+	set_shadow ('login');
 }"""
 jsTests = """
 	function	set_shadow (shstat) {	$.ajax({data: 'shstat='+ shstat +'&' +$('form').serialize()});	}
@@ -83,10 +89,15 @@ function	create_auto () {
 
 def	out_head (title = None):
 	code_ssys = -1
-	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=25%>"
+	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=20%>"
 	if title:	print "<span class='tit'>", title, "</span>"
-	print	"""<td width=700>User: <select name='users"' id="users" onchange="sel_users()"><option></option></select> <span id='ttoken'>ttoken</span></td>"""
-	print	"<td>wUser: <b id='wuser'></b></td>"	#<td>HW:<span id='hw_types'></span></td><td></td>"
+#	print	"""<td width=700>User: <select name='users"' id="users" onchange="sel_users()"><option></option></select> <span id='ttoken'>ttoken</span></td>"""
+	print   "<td>Host:"
+	cglob.out_select('set_whost', RES_WHST, ['host_name', 'host_name'], key = None, sopt = 'onchange="document.myForm.whost.value = document.myForm.set_whost.value;" ')
+	print	"</td><td>wUser:"
+	cglob.out_select('users', RES_WUSR, ['token', 'login'], key = None, sopt = 'id="users" onchange="sel_users()"')
+	print	"<span id='ttoken'>ttoken</span></td>"
+	print	"<td><b id='wuser'></b></td>"	#<td>HW:<span id='hw_types'></span></td><td></td>"
 	print	"<td align=right>"
 	print	"""<input type='button' class='butt' value='check_form_auto' onclick=" check_form_auto();" />"""
 	print	"""<input type='button' class='butt' value='TEST get_users' onclick="set_shadow('get_users');" />"""
@@ -139,7 +150,7 @@ def	out_form_auto ():
 def	perror (tit = None, txt = None):
 	if not tit:	tit = ''
 	print	"<div class='error'><b>%s</b> %s</div>" % (str(tit), str(txt))
-'''
+
 def	new_widow (request, conf):
 	global	CONFIG
 	CONFIG = conf
@@ -163,36 +174,76 @@ def	new_widow (request, conf):
 		print "<span style='background-color: #ffa; color: #a00; padding: 4px;'> EXCEPT new_widow:", exc_type, exc_value, "</span>"
 	finally:
 		print "</form></body></html>"
-'''
+
+def	test_db_connects():
+	""" Контроль соединения с Базами Данных	"""
+	print "Контроль соединения с Базами Данных<pre>"
+	for k in DBDS.keys():
+		print	k, DBDS[k],
+		dbi = dbtools.dbtools(DBDS[k])
+		if dbi:	print 'Ok'
+		else:	print 'Err'
+	print "</pre>"
+
+#RES_WHU	= None
+DB_WL	= None
+DBDS	= None	# описатели соединений с Базами Данных
+TOKENS	= []
+try:
+	DB_WL	= dbtools.dbtools('host=127.0.0.1 dbname=wialon port=5432 user=smirnov')
+	RES_WHST = DB_WL.get_table("whosts", "id_wh > 0 ORDER BY id_wh")
+	RES_WUSR = DB_WL.get_table("whusers", "id_whu IN (5,6) ORDER BY id_whu")
+	if RES_WUSR:
+		d = RES_WUSR[0]
+		for r in RES_WUSR[1]:
+			TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))
+except:
+	exc_type, exc_value = sys.exc_info()[:2]
+	perror ("EXCEPT: Init TOKENS in main.py", " ".join(["<pre>", str(exc_type).replace('<', '# '), str(exc_value), "</pre>"]))
+
 
 def	main (request, conf):
 	global	CONFIG
+	global	DBDS, TOKENS, DB_WL
 	CONFIG = conf
+	if not TOKENS:
+		test_db_connects()
+		return
+
 #	print """<html xmlns="http://www.w3.org/1999/xhtml">"""
+	DBDS = dict(CONFIG.items('dbNames'))
 	try:
 		print "<head> <meta name='Author' content='V.Smirnov'> <title>%s</title>" % CONFIG.get('System', 'title')
 		rel_css ((r'/css/style.css', r'/css/calendar.css'))
 		jscripts(jsList)
 	#	jscripts ((r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js'))
 	#	print jsLocal, "</head>"
-		print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(tokens), jsTests, "</script></head>"])
+	#	print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(tokens), jsTests, "</script></head>"])
+	#	print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(TOKENS), jsTests, "</script></head>"])
+		print "\n".join(["<script type='text/javascript'>", jsLocal, jsTests, "</script></head>"])
 		print "<body>"
 		print """<form name='myForm' action='/cgi/w.cgi' method='post'><fieldset class='hidd'>
 			<!--input name='wuser' type='hidden' id='wuser' /-->
+			<input name='whost' type='hidden' id='whost' />
 			<input name='wusid' type='hidden' id='wusid' />
 			<input name='wsid' type='hidden' id='wsid' />
 			<input name='token' type='hidden' id='token' size=76 />
 			</fieldset>"""
+		'''
+	#	DB_WL = dbtools.dbtools(CONFIG.get('dbNames', 'wialon'))
+	#	RES_WHU = DB_WL.get_table("whusers u INNER JOIN whosts h ON u.id_wh = h.id_wh", "token IS NOT NULL ORDER BY login DESC")
+		print "<pre>", dict(CONFIG.items('dbNames')), "</pre>"
+		'''
 		out_head(CONFIG.get('System', 'name'))
 		print	"<div id='dbody' class='hidd'>"
-		out_form_auto ()
+	#	out_form_auto ()
 		print	"</div><!-- dbody	-->"
 		print	"""<div id="log" style='border: 1px solid #bbc; color: #668;'></div>"""
 #		print	"</form><!-- myForm	-->"
 		if request.has_key('message'):
 			print "<div id='message' style='text-align:center;'>%s</div>" % request['message']
 		else:	print "<div id='message' style='text-align:center;'>message</div>"
-		print """<script language="JavaScript">setTimeout ("set_message ('')", 1000);</script>"""
+		print """<script language="JavaScript">setTimeout ("set_message ('')", 10000);</script>"""
 		print """<table><tr><td><div id='shadow'>shadow</div></td><td><div id='shadow2'>shadow2</div></td><td>
 		<div id='widget'>widget</div></td><td><div id='error'>error</div></td><td><div id='warnn'>warnn</div></td></tr></table>"""
 	#	print os.environ['REMOTE_ADDR']
