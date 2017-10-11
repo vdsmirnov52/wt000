@@ -24,7 +24,17 @@ def	received_egts (uid, du):
 def	get_atts (fname = r"./conf/RNIC_atts.txt", receiv_type = 'GPRS'):
 	d = {}
 	# Перечень столбцов в исходном файле fname
-	cols = ['uid', 'ph', 'icc', 'icc2', 'ph2', 'vid', 'nm', 'as', 'ds', 'pg']
+	# uid	Код прибора     
+	# ph	Номер телефона  
+	# icc	ICC ID 1        
+	# ph2	Номер телефона 2        
+	# icc2	ICC ID 2        
+	# vid	Вид прибора навигации   
+	# nm	Гаражный номер ТС       
+	# as	Аналоговые входы        
+	# ds	Дискретные входы        
+	# pg	Приоритетная группа
+	cols = ['uid', 'ph', 'icc', 'ph2', 'icc2', 'vid', 'nm', 'as', 'ds', 'pg']
 	cign = ['icc', 'icc2', 'as', 'ds']	# столбци исключенные из обработки
 	
 	f = open (fname, 'r')

@@ -8,7 +8,7 @@ import	json
 #from	mobph_wlp import *
 #from	auto_wlp import *
 
-import	urllib2, random, mimetypes
+import	urllib2, random
 
 err_dict = {
 	0:	'Удачное выполнение операции',
@@ -30,12 +30,12 @@ err_dict = {
 def	requesr (data, host = None):
 	res = send_post(data, host = host)
 	if res:
-		if type(res) == dict and res.has_key('error') and res['error'] > 0:
-			if err_dict.has_key(res['error']):
-				return False, err_dict[res['error']]
-			else:	return False, err_dict['error'] +str(res['error'])
-		elif res.has_key('error') and res['error'] == 0:
-			return True, err_dict[0]
+		if type(res) == dict and res.has_key('error'):
+			if res['error'] != 0:
+				if err_dict.has_key(res['error']):
+					return False, err_dict[res['error']]
+				else:	return False, err_dict['error'] +str(res['error'])
+			else:	return True, err_dict[0]
 		else:	return True, res
 	else:	return False, err_dict['nores']
 
@@ -64,7 +64,6 @@ def	upload_wlp(sid, svc):
 	parts.append('--' + boundary)
 	file_path = r'wlp/test_ph1.wlp'
 	parts.append('Content-Disposition: form-data; name="import_file"; filename="%s"' % file_path)
-#	parts.append('Content-Type: %s\r\n' % mimetypes.guess_type(file_path)[0] or 'application/octet-stream')
 #	parts.append('Content-Type: application/octet-stream\r\n')
 	parts.append('Content-Type: application/json\r\n')
 	parts.append(open(file_path, 'r').read())
@@ -126,12 +125,28 @@ usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный 
 	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c272899BB584F98F199F951746467AA85947F7A9F5",
 	}
 
+def	ppp (obj, label = None):
+	if label:	print label.upper()
+	if type(obj) == list:
+		print "<pre>List:"
+		for l in obj:		print l
+		print "</pre>"
+	elif type(obj) == dict:
+		if obj.has_key('error'):
+			print 'error', err_dict[obj['error']]
+			return
+		print "<pre>Dict:"
+		for k in obj.keys():	print k, "=>\t", obj[k]
+		print "</pre>"
+	else:
+		print "Type", type(obj)
+
 if __name__ == "__main__":
 	# Login
 #	sres = send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % usr2token['V.Smirnov']})
 	sres = send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % usr2token['wialon']})
 	res = upload_wlp(sres['eid'], 'exchange/import_json')
-#	ppp(res)
+	ppp(res, "upload_wlp exchange/import_json")
 	try:
 		DEBUG = True
 		usr = sres['au']
@@ -143,7 +158,6 @@ if __name__ == "__main__":
 		data['svc'] = 'core/get_hw_types'
 		data['params'] = { "filterType":"type", "filterValue":["mobile"], "includeType": True }
 		print "ZZZZZZZZZZZZZZZZZ", data
-		os.exit()
 		res = send_post(data)
 		ppp(res, data['svc'])
 		'''

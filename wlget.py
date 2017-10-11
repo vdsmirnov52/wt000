@@ -7,6 +7,15 @@ import	getopt
 
 LIBRARY_DIR = r"/home/smirnov/WT/lib"          # Путь к рабочей директории (библиотеке)
 sys.path.insert(0, LIBRARY_DIR)
+
+CONF_PATHNAME = r"/home/smirnov/Wialon/sys.ini"
+CONFIG = None
+if os.access (CONF_PATHNAME, os.F_OK):
+	import ConfigParser
+	CONFIG = ConfigParser.ConfigParser()
+	CONFIG.read (CONF_PATHNAME)
+	usr2token = dict(CONFIG.items('usr2token'))
+
 import	twlp
 
 WHOST =	r"http://wialon.rnc52.ru/wialon/"
@@ -520,6 +529,7 @@ def	outhelp():
 	-w	Список оборудования hwTypes
 	-P	Пароль доступа к объекту
 	"""
+	if CONFIG:	print "CONFIG[usr2token]:\n\t", usr2token
 	sys.exit()
 
 if __name__ == "__main__":

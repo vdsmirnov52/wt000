@@ -40,13 +40,70 @@ def	select_hw_types (obj, sname = 'hwTypeId', iddom = '_hwTypeId'):
 
 def	get_hw_types (request):
 	if request.has_key('wsid') and request['wsid']:
+		print "~dbody|<div id='_hwTypeId'>ZZZZZZZZZZZZZ</div>", request
 		sid = request['wsid']
 		import	twlp
 		vtype = ["auto", "mobile", "soft", "tracker"]
 		data ={'sid': sid, 'svc': 'core/get_hw_types', 'params': { "filterType":"type", "filterValue":["auto", "mobile", "soft", "tracker"], "includeType": True}}
 		fres, sres = twlp.requesr(data)		# sres = twlp.send_post(data)
+	#	print "<pre>RES", fres, sres, "</pre>"
 		if fres:	select_hw_types(sres)
 		else:	print "~error|", sres
+	else:	print "~error|", request
+
+def	out_pos (pos):
+	if not pos:	return	""
+#	return time.strftime("%Y-%m-%d %T", time.localtime(pos['t']))
+	sout = "\t[%s %3.9f, %3.9f, %d]" % (time.strftime("%Y-%m-%d %T", time.localtime(pos['t'])), pos['x'], pos['y'], pos['z'])
+	return	sout
+
+def	sssss (s):
+	try:
+		return	"%s" % s
+	except:	return  "%s" % s.encode('UTF-8')
+
+def	out_flds (flds):
+	if not flds:	return	"flds None"
+	flds_list = []
+	for k in flds.keys():
+#		flds_list.append(str(flds[k]))
+		if flds[k]['v']:
+			flds_list.append("'%s', '%s'" % (flds[k]['n'].encode('UTF-8'), flds[k]['v'].encode('UTF-8')))
+	return	"; ".join(flds_list)
+
+def	get_avl_unit (request):
+	if request.has_key('wsid') and request['wsid']:
+		import	twlp
+		sid = request['wsid']
+		print "~dbody|"
+		flags = -1	#0x0409
+		itype = 'avl_unit'
+		data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':itype,'propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':flags,'from':0,'to':0}}
+		fres, sres = twlp.requesr(data)
+		if fres:
+			print "<pre>", fres, sres['dataFlags']
+			print sres['dataFlags']
+			for item in sres['items']:
+				itemId = item['id']
+				if not item['pos']:	continue
+				if not (item['aflds'] or item['flds']):	continue
+				'''
+				if item['flds']:	#	continue
+					time.sleep(1)
+					# svc=item/update_custom_field&params={"itemId":<long>, "id":<long>,		"callMode":<text> "n":<text>, "v":<text>}
+					jdata = {'sid': sid, 'svc': 'item/update_custom_field', 'params':{"itemId": item['id'], "id":4, "callMode": "create", "n":'inn', "v": '123456'}}
+					fres, sres = twlp.requesr(jdata)
+					print jdata, fres, sres
+				'''
+		#		print item
+				print item['nm'].encode('UTF-8'), out_pos(item['pos']), #out_flds (item['flds']), out_flds (item['aflds'])
+				if item.has_key('flds') and item['flds']:	print "\tflds:", out_flds (item['flds']),
+				if item.has_key('aflds') and item['aflds']:	print "\taflds:", out_flds (item['aflds']),
+				print
+		#		print item['nm'].encode('UTF-8'), item['pos'], item['aflds'] 
+		
+	#		for k in sres.keys(): print k,# sres[k]
+			print "</pre>"
 	else:	print "~error|", request
 
 def	select_users (obj, **keywords):
@@ -290,6 +347,7 @@ def	main (SCRIPT_NAME, request, referer):
 					sres = twlp.send_post ({'svc': 'core/batch', 'params': "{}", 'sid': "%s" % request['wsid']})
 				#	print "~log|", str(sres)
 				else:	print "~error|", request
+			elif shstat == 'get_avl_unit':		get_avl_unit (request)
 			elif shstat == 'get_hw_types':		get_hw_types (request)
 			elif shstat == 'get_users':		get_items (request, 'user')
 			elif shstat == 'create_unit':
