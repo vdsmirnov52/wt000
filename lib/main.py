@@ -92,12 +92,14 @@ def	out_head (title = None):
 	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=20%>"
 	if title:	print "<span class='tit'>", title, "</span>"
 #	print	"""<td width=700>User: <select name='users"' id="users" onchange="sel_users()"><option></option></select> <span id='ttoken'>ttoken</span></td>"""
-	print   "<td>Host:"
+	print   "<td width=20%>Host:"
 	cglob.out_select('set_whost', RES_WHST, ['host_name', 'host_name'], key = None, sopt = 'onchange="document.myForm.whost.value = document.myForm.set_whost.value;" ')
 	print	"</td><td>wUser:"
 	cglob.out_select('users', RES_WUSR, ['token', 'login'], key = None, sopt = 'id="users" onchange="sel_users()"')
 	print	"<span id='ttoken'>ttoken</span></td>"
 	print	"<td><b id='wuser'></b></td>"	#<td>HW:<span id='hw_types'></span></td><td></td>"
+	print	"""<td align=right><img onclick="document.myForm.submit();" title="Обновить" src="../img/reload3.png"></td>"""
+	print	"</tr></table><table width=100%><tr><td>"
 	print	"<td align=right>"
 	print	"""<input type='button' class='butt' value='check_form_auto' onclick=" check_form_auto();" />"""
 	print	"""<input type='button' class='butt' value='GET_users' onclick="set_shadow('get_users');" />"""
@@ -106,7 +108,6 @@ def	out_head (title = None):
 	print	"""<input type='button' class='butt' value='Connect' onclick="set_shadow('connect');" />"""
 	print	"""<input type='button' class='butt' value='Exit' onclick="set_shadow('exit');" />"""
 	print	"</td>"
-	print	"""<td align=right><img onclick="document.myForm.submit();" title="Обновить" src="../img/reload3.png"></td>"""
 	print	"</tr></table></div>"
 
 def	out_form_auto ():

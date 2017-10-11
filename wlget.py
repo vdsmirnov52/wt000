@@ -15,6 +15,7 @@ if os.access (CONF_PATHNAME, os.F_OK):
 	CONFIG = ConfigParser.ConfigParser()
 	CONFIG.read (CONF_PATHNAME)
 	usr2token = dict(CONFIG.items('usr2token'))
+	DBDS = dict(CONFIG.items('dbNames'))
 
 import	twlp
 
