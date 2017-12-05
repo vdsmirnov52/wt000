@@ -286,6 +286,7 @@ def	is_successfully (label, sres):
 		usr = sres['au']
 		usid = sres['user']['id']
 		print label, "<span class='bfinf'> successfully </span> SID:", sid, "User:", usr, "UsId:", usid
+		print "~ttoken| UsId:", usid, "<span class='bfinf'> successfully </span> SID:", sid
 		print "~eval|$('#wusid').val('%s'); $('#wuser').html('%s');" % (usid, usr)
 		print "~eval|$('#wsid').val('%s');" % sid	#sres['eid']
 	except:	print label, "<span class='bferr'> Result:</span>", sres
@@ -338,8 +339,9 @@ def	main (SCRIPT_NAME, request, referer):
 			elif shstat == 'exit':
 				print "~log|Logout:"
 				if request.has_key('wsid') and request['wsid'] != '':
-					logout(request)
+					res = logout(request)
 				else:	print "<span class='bferr'> you are already logouted </span>"
+				print "~ttoken| Logout"	#, res
 		#		print "~eval|$('#wsid').val(''); $('#wusid').val(''); $('#wuser').html('');"
 			elif shstat == 'continue':
 				if request.has_key('wsid') and request['wsid']:

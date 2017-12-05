@@ -32,7 +32,7 @@ jsLocal =  """$(document).ready(function () {
 //	init_users();
 })
 /////////////////////////////////////////////
- wialon_timerId = 0
+wialon_timerId = 0
 function msg(text) { $("#log").prepend(text + "<br/>"); }
 
 function init_users() {
@@ -50,7 +50,8 @@ function sel_users() {
 		} else	return
 	}
 	$('#token').val($('#users').val());
-	$('#ttoken').html($('#users').val());
+//	$('#ttoken').html($('#users').val());
+	$('#warnn').html("<span class='bfinf'>Token:</span>" + $('#users').val());
 	set_shadow ('login');
 }"""
 jsTests = """
@@ -89,26 +90,29 @@ function	create_auto () {
 
 def	out_head (title = None):
 	code_ssys = -1
-	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=20%>"
+	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=200px>"
 	if title:	print "<span class='tit'>", title, "</span>"
 #	print	"""<td width=700>User: <select name='users"' id="users" onchange="sel_users()"><option></option></select> <span id='ttoken'>ttoken</span></td>"""
-	print   "<td width=20%>Host:"
+	print   "<td width=200px>Host:"
 	cglob.out_select('set_whost', RES_WHST, ['host_name', 'host_name'], key = None, sopt = 'onchange="document.myForm.whost.value = document.myForm.set_whost.value;" ')
 	print	"</td><td>wUser:"
 	cglob.out_select('users', RES_WUSR, ['token', 'login'], key = None, sopt = 'id="users" onchange="sel_users()"')
 	print	"<span id='ttoken'>ttoken</span></td>"
 	print	"<td><b id='wuser'></b></td>"	#<td>HW:<span id='hw_types'></span></td><td></td>"
+	print	"""<td align=right><input type='button' class='butt' value='Connect' onclick="set_shadow('connect');" />"""
+	print	"""<input type='button' class='butt' value='Exit' onclick="set_shadow('exit');" /></td>"""
 	print	"""<td align=right><img onclick="document.myForm.submit();" title="Обновить" src="../img/reload3.png"></td>"""
-	print	"</tr></table><table width=100%><tr><td>"
-	print	"<td align=right>"
-	print	"""<input type='button' class='butt' value='check_form_auto' onclick=" check_form_auto();" />"""
-	print	"""<input type='button' class='butt' value='GET_users' onclick="set_shadow('get_users');" />"""
-	print	"""<input type='button' class='butt' value='GET_hw_types' onclick="set_shadow('get_hw_types');" />"""
-	print	"""<input type='button' class='butt' value='GET_avl_unit' onclick="set_shadow('get_avl_unit');" />"""
-	print	"""<input type='button' class='butt' value='Connect' onclick="set_shadow('connect');" />"""
-	print	"""<input type='button' class='butt' value='Exit' onclick="set_shadow('exit');" />"""
-	print	"</td>"
 	print	"</tr></table></div>"
+#	print button_autos
+
+button_autos = """
+	<div class='box' style='background-color: #ccd;'><table width=100%><tr><td>
+	<td align=right>
+	<input type='button' class='butt' value='check_form_auto' onclick=" check_form_auto();" />
+	<input type='button' class='butt' value='GET_users' onclick="set_shadow('get_users');" />
+	<input type='button' class='butt' value='GET_hw_types' onclick="set_shadow('get_hw_types');" />
+	<input type='button' class='butt' value='GET_avl_unit' onclick="set_shadow('get_avl_unit');" />
+	</td></tr></table></div>"""
 
 def	out_form_auto ():
 	def_vals = {'creatorId':17, 'dataFlags':4294967295, }
@@ -195,25 +199,32 @@ try:
 	DB_WL	= dbtools.dbtools('host=127.0.0.1 dbname=wialon port=5432 user=smirnov')
 	RES_WHST = DB_WL.get_table("whosts", "id_wh > 0 ORDER BY id_wh")
 	RES_WUSR = DB_WL.get_table("whusers", "id_whu IN (5,6) ORDER BY id_whu")
-	if RES_WUSR:
-		d = RES_WUSR[0]
-		for r in RES_WUSR[1]:
-			TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))
+#	if RES_WUSR:
+#		d = RES_WUSR[0]
+#		for r in RES_WUSR[1]:	TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))
 except:
 	exc_type, exc_value = sys.exc_info()[:2]
 	perror ("EXCEPT: Init TOKENS in main.py", " ".join(["<pre>", str(exc_type).replace('<', '# '), str(exc_value), "</pre>"]))
 
+#######################################################
 
 def	main (request, conf):
 	global	CONFIG
 	global	DBDS, TOKENS, DB_WL
 	CONFIG = conf
-	if not TOKENS:
+	DBDS = dict(CONFIG.items('dbNames'))
+	TOKENS = dict(CONFIG.items('usr2token'))
+	if TOKENS:
+		DB_WL.qexecute ("update whusers SET token = '%s', token_create = now() WHERE id_whu != 6;" % TOKENS['wialon'])
+		DB_WL.qexecute ("update whusers SET token = '%s', token_create = now() WHERE id_whu = 6;" % TOKENS['v.smirnov'])
+	elif RES_WUSR:
+		d = RES_WUSR[0]
+		for r in RES_WUSR[1]:	TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))
+	else:
 		test_db_connects()
 		return
 
 #	print """<html xmlns="http://www.w3.org/1999/xhtml">"""
-	DBDS = dict(CONFIG.items('dbNames'))
 	try:
 		print "<head> <meta name='Author' content='V.Smirnov'> <title>%s</title>" % CONFIG.get('System', 'title')
 		rel_css ((r'/css/style.css', r'/css/calendar.css'))
@@ -232,11 +243,9 @@ def	main (request, conf):
 			<input name='token' type='hidden' id='token' size=76 />
 			</fieldset>"""
 		'''
-	#	DB_WL = dbtools.dbtools(CONFIG.get('dbNames', 'wialon'))
-	#	RES_WHU = DB_WL.get_table("whusers u INNER JOIN whosts h ON u.id_wh = h.id_wh", "token IS NOT NULL ORDER BY login DESC")
-		print "<pre>", dict(CONFIG.items('dbNames')), "</pre>"
 		'''
 		out_head(CONFIG.get('System', 'name'))
+	#	print button_autos
 		print	"<div id='dbody' class='hidd'>"
 	#	out_form_auto ()
 		print	"</div><!-- dbody	-->"
