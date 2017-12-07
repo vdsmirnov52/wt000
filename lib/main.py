@@ -195,16 +195,29 @@ def	test_db_connects():
 DB_WL	= None
 DBDS	= None	# описатели соединений с Базами Данных
 TOKENS	= []
-try:
+#try:
+def	init():
+	global	DBDS, RES_WHST, RES_WUSR, DB_WL
 	DB_WL	= dbtools.dbtools('host=127.0.0.1 dbname=wialon port=5432 user=smirnov')
 	RES_WHST = DB_WL.get_table("whosts", "id_wh > 0 ORDER BY id_wh")
 	RES_WUSR = DB_WL.get_table("whusers", "id_whu IN (5,6) ORDER BY id_whu")
+'''
 #	if RES_WUSR:
 #		d = RES_WUSR[0]
 #		for r in RES_WUSR[1]:	TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))
 except:
 	exc_type, exc_value = sys.exc_info()[:2]
 	perror ("EXCEPT: Init TOKENS in main.py", " ".join(["<pre>", str(exc_type).replace('<', '# '), str(exc_value), "</pre>"]))
+'''
+def	dom_head ():
+		print "<head> <meta name='Author' content='V.Smirnov'> <title>%s</title>" % CONFIG.get('System', 'title')
+		rel_css ((r'/css/style.css', r'/css/calendar.css'))
+		jscripts(jsList)
+	#	jscripts ((r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js'))
+	#	print jsLocal, "</head>"
+	#	print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(tokens), jsTests, "</script></head>"])
+	#	print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(TOKENS), jsTests, "</script></head>"])
+		print "\n".join(["<script type='text/javascript'>", jsLocal, jsTests, "</script></head>"])
 
 #######################################################
 
@@ -214,6 +227,8 @@ def	main (request, conf):
 	CONFIG = conf
 	DBDS = dict(CONFIG.items('dbNames'))
 	TOKENS = dict(CONFIG.items('usr2token'))
+	dom_head()
+	init ()
 	if TOKENS:
 		DB_WL.qexecute ("update whusers SET token = '%s', token_create = now() WHERE id_whu != 6;" % TOKENS['wialon'])
 		DB_WL.qexecute ("update whusers SET token = '%s', token_create = now() WHERE id_whu = 6;" % TOKENS['v.smirnov'])
@@ -226,14 +241,6 @@ def	main (request, conf):
 
 #	print """<html xmlns="http://www.w3.org/1999/xhtml">"""
 	try:
-		print "<head> <meta name='Author' content='V.Smirnov'> <title>%s</title>" % CONFIG.get('System', 'title')
-		rel_css ((r'/css/style.css', r'/css/calendar.css'))
-		jscripts(jsList)
-	#	jscripts ((r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js'))
-	#	print jsLocal, "</head>"
-	#	print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(tokens), jsTests, "</script></head>"])
-	#	print "\n".join(["<script type='text/javascript'>", jsLocal, "var users_token = [\n%s\n];" % ',\n'.join(TOKENS), jsTests, "</script></head>"])
-		print "\n".join(["<script type='text/javascript'>", jsLocal, jsTests, "</script></head>"])
 		print "<body>"
 		print """<form name='myForm' action='/cgi/w.cgi' method='post'><fieldset class='hidd'>
 			<!--input name='wuser' type='hidden' id='wuser' /-->
