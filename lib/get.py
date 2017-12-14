@@ -4,6 +4,9 @@
 import	os, sys, time
 import	urllib
 import	json
+
+LIBRARY_DIR = r"/home/smirnov/Wialon/lib/"
+sys.path.insert(0, LIBRARY_DIR)
 from	wtools import *
 
 def	request (sid, svc, params = None):
@@ -145,11 +148,12 @@ def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
 	ppp(res)
 	
 if __name__ == "__main__":
+	usr2token = init_conf ()
 #	sess = {}
 	sess = login(usr2token['wialon'])
 #	sess = login(usr2token['V.Smirnov'])
 	sid = sess['eid']
-	get_autos (sid)
+#	get_autos (sid)
 #	get_hw_types(sid)
 #	get_user (sid)
 	print ''

@@ -191,23 +191,24 @@ def	test_db_connects():
 		else:	print 'Err'
 	print "</pre>"
 
-#RES_WHU	= None
 DB_WL	= None
 DBDS	= None	# описатели соединений с Базами Данных
 TOKENS	= []
-#try:
-def	init():
+
+def	init_conf():
+	global	BDCOBF
 	global	DBDS, RES_WHST, RES_WUSR, DB_WL
+	import	dbsqlite
+
+	dbconf = dbsqlite.dbsqlite(os.path.join(LIBRARY_DIR, 'config.db'))
+
+	RES_WHST = dbconf.get_table("whosts", "id_wh > 0 ORDER BY host_name")
+	RES_WUSR = dbconf.get_table("whusers", "id_whu > 0 ORDER BY id_whu")
+	return	dbconf
+'''
 	DB_WL	= dbtools.dbtools('host=127.0.0.1 dbname=wialon port=5432 user=smirnov')
 	RES_WHST = DB_WL.get_table("whosts", "id_wh > 0 ORDER BY id_wh")
 	RES_WUSR = DB_WL.get_table("whusers", "id_whu IN (5,6) ORDER BY id_whu")
-'''
-#	if RES_WUSR:
-#		d = RES_WUSR[0]
-#		for r in RES_WUSR[1]:	TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))
-except:
-	exc_type, exc_value = sys.exc_info()[:2]
-	perror ("EXCEPT: Init TOKENS in main.py", " ".join(["<pre>", str(exc_type).replace('<', '# '), str(exc_value), "</pre>"]))
 '''
 def	dom_head ():
 		print "<head> <meta name='Author' content='V.Smirnov'> <title>%s</title>" % CONFIG.get('System', 'title')
@@ -223,15 +224,16 @@ def	dom_head ():
 
 def	main (request, conf):
 	global	CONFIG
+	global	BDCOBF
 	global	DBDS, TOKENS, DB_WL
 	CONFIG = conf
 	DBDS = dict(CONFIG.items('dbNames'))
 	TOKENS = dict(CONFIG.items('usr2token'))
 	dom_head()
-	init ()
+	BDCOBF = init_conf ()
 	if TOKENS:
-		DB_WL.qexecute ("update whusers SET token = '%s', token_create = now() WHERE id_whu != 6;" % TOKENS['wialon'])
-		DB_WL.qexecute ("update whusers SET token = '%s', token_create = now() WHERE id_whu = 6;" % TOKENS['v.smirnov'])
+		BDCOBF.execute ("update whusers SET token = '%s', token_create = now() WHERE id_whu != 6;" % TOKENS['wialon'])
+		BDCOBF.execute ("update whusers SET token = '%s', token_create = now() WHERE id_whu = 6;" % TOKENS['v.smirnov'])
 	elif RES_WUSR:
 		d = RES_WUSR[0]
 		for r in RES_WUSR[1]:	TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))

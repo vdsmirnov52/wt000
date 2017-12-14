@@ -335,7 +335,13 @@ def	main (SCRIPT_NAME, request, referer):
 			#		print "~eval|alert('usid: ' +%s); $('#creatorId').val(%s);" % (usid, usid)
 			#		print "~eval|wialon_timerId = setInterval(function() {set_shadow('continue')}, 120000);"
 			elif shstat == 'login':
-				print "~log|", 	login(request)
+				import  wtools
+				res = 	login(request)
+				print "~dbody|<pre>"
+				for k in res['user'].keys():
+				#	print k
+					wtools.ppp(res['user'][k], k)
+				print "</pre>"
 			elif shstat == 'exit':
 				print "~log|Logout:"
 				if request.has_key('wsid') and request['wsid'] != '':

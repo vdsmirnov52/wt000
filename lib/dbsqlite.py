@@ -4,7 +4,7 @@
 import	sys
 import	sqlite3
 
-class dsqlite:
+class dbsqlite:
 	r""" Работа с SQLite
 	Warning('You can only execute one statement at a time.',) ... только одно заявление за раз
 Функции:
@@ -99,10 +99,11 @@ if __name__ == '__main__':
 	"INSERT INTO whusers (login, token) VALUES ('wialon', '1d5a4a6ab2bde440204e6bd1d53b3af82FD7F6B064E042FBBCC978E2B37A2A95930F80E6')",
 	"INSERT INTO whusers (login, token) VALUES ('V.Smirnov', 'c5a76d06f77af04aa4c9fa0699d465c299B67214D257083C5E790742520C44F9EA0E3D80')",
 	]
-	lite = dsqlite()	#'wialon.db')
+	lite = dbsqlite()	#'wialon.db')
 	print lite.execute("INSERT INTO whosts (host_name) VALUES (?)", ('ZZZZZ',)), lite.last_error
 	for sql in sqls:
 		print sql, lite.execute(sql), lite.last_error
 	print 'SQLite version:', lite.get_row('SELECT SQLITE_VERSION()')
 	print 'get_rows:', lite.get_rows('SELECT * FROM whosts WHERE id_wh > 0'), lite.last_error, lite.desc
 	print 'get_table:', lite.get_table ('whusers'), lite.last_error
+	print help(sqlite3)

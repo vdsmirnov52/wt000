@@ -5,6 +5,9 @@ import	os, sys, time
 import	urllib
 import	json
 
+LIBRARY_DIR = r"/home/smirnov/Wialon/lib/"
+sys.path.insert(0, LIBRARY_DIR)
+
 def	ppp(obj, oname = 'objName', level = 0):
 	if type(obj) == dict and obj.has_key('error'):
 		print obj,
@@ -74,14 +77,9 @@ def	perror (ecod):
 sess =		None	# sid - Session Identificator
 account =	None
 
-usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af8620F22673AA380EB6248F7D4DAE4A476F082A6DB",	# 2017.06.27
-	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c231F50E8A41E3D339E9E590B13CE9C0FB20F5CCE0",	# 2017.06.27
-	}
-
-url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'%s'}" % usr2token['wialon']
 def	login (token = None):
 	global	sess
+	url = r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'%s'}" % usr2token['wialon']
 	if not token:
 		sess = json.load(urllib.urlopen(url))
 	else:	sess = json.load(urllib.urlopen(r"http://wialon.rnc52.ru/wialon/ajax.html?svc=token/login&params={'token':'%s'}" % token))	
@@ -107,7 +105,7 @@ def	find_key (dct, key):
 	else:	return	#	pass	#	print type (dct)
 
 def test_login ():
-	print "test_login"
+	print "test_login", login()
 	for uname in usr2token.keys():
 	#	time.sleep(1)
 		print "\t", uname, "\t",
@@ -123,5 +121,29 @@ def test_login ():
 			perror (res['error'])
 		else:	print "\nRES:", res
 
+############################################
+def	init_conf ():
+	print """ Инициализация доступа к Wialon	"""
+	global	RES_WHST, RES_WUSR, usr2token
+	import	dbsqlite
+
+	dbconf = dbsqlite.dbsqlite(os.path.join(LIBRARY_DIR, 'config.db'))
+	RES_WHST = dbconf.get_table("whosts", "id_wh > 0 ORDER BY id_wh")
+	RES_WUSR = dbconf.get_table("whusers", "id_whu > 0 ORDER BY id_whu")
+
+	d = RES_WUSR[0]
+	for r in RES_WUSR[1]:	usr2token[r[d.index('login')]] = r[d.index('token')]
+#	dbconf.close()
+	return	usr2token
+
+usr2token = {}
 if __name__ == "__main__":
+	init_conf ()
+#	print RES_WUSR
+	d = RES_WUSR[0]
+	for r in RES_WUSR[1]:	usr2token[r[d.index('login')]] = r[d.index('token')]
+	host = RES_WHST[1][0][1]
+	print '#'*22, usr2token
+	print r"http://%s/wialon/ajax.html?svc=token/login&params={'token':'%s'}" % (host, usr2token['wialon'])
+
 	test_login()

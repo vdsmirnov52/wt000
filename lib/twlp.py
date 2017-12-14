@@ -126,20 +126,22 @@ usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный 
 	}
 
 def	ppp (obj, label = None):
-	if label:	print label.upper()
+	if label:	print label.upper(),
 	if type(obj) == list:
-		print "<pre>List:"
+		print "List:"
 		for l in obj:		print l
-		print "</pre>"
+	#	print "</pre>"
 	elif type(obj) == dict:
 		if obj.has_key('error'):
 			print 'error', err_dict[obj['error']]
 			return
-		print "<pre>Dict:"
-		for k in obj.keys():	print k, "=>\t", obj[k]
-		print "</pre>"
-	else:
-		print "Type", type(obj)
+		print "Dict:"
+		for k in obj.keys():	print k, "=>\t", obj[k]	# ppp(obj[k])
+	#	print "</pre>"
+	elif obj:
+		print obj
+	else:	pass
+	#	print "Type", type(obj)
 
 if __name__ == "__main__":
 	# Login
