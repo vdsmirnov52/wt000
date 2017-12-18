@@ -142,21 +142,18 @@ def	send_post (sid, svc):
         res = json.load(urllib.urlopen(url, sppp))
 	ppp(res)
 
+def	get_zones (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):	# zones_library
+	print "#"*33, "zones_library"
+	res = request (sid, svss['search_items'], "'spec':{'itemsType':'avl_resource','propName':'zones_library','propValueMask':'*','sortType':''},'force':1,'flags':%s,'from':0,'to':0" % flags)
+	ppp(res)
+
 def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
 	print "#"*33, "get_user"
 	res = request (sid, svss['search_items'], "'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':''},'force':1,'flags':%s,'from':0,'to':0" % flags)
 	ppp(res)
 	
-if __name__ == "__main__":
-	usr2token = init_conf ()
-#	sess = {}
-	sess = login(usr2token['wialon'])
-#	sess = login(usr2token['V.Smirnov'])
+def	puser_prp (sess):
 	sid = sess['eid']
-#	get_autos (sid)
-#	get_hw_types(sid)
-#	get_user (sid)
-	print ''
 	print "#"*33, '"user_namt": "%s"' % sess["user"]["nm"]
 	for u in sess["user"]["prp"].keys():
 		if u == "monugv":
@@ -174,8 +171,21 @@ if __name__ == "__main__":
 					print "'%s'\tid: %d\t" % (snm, res['item']['id']) ,
 					print monugr[g]
 				else:	ppp(res, g)
-	'''
 
+if __name__ == "__main__":
+	usr2token = init_conf ()
+#	sess = {}
+	sess = login(usr2token['wialon'])
+#	sess = login(usr2token['V.Smirnov'])
+	sid = sess['eid']
+#	get_autos (sid)
+#	get_hw_types(sid)
+#	get_user (sid)
+	get_zones (sid)
+	print ''
+	puser_prp (sess)
+
+	'''
 	UUU = 'http://wialon.rnc52.ru/wialon/ajax.html?svc=core/create_unit&params={"creatorId":31,"name":"test_LLL","hwTypeId":"9","dataFlags":257}&sid=' + sid
 	print "SID", UUU
 	res = json.load(urllib.urlopen(UUU))

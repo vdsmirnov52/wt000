@@ -105,6 +105,11 @@ def	out_head (title = None):
 	print	"</tr></table></div>"
 #	print button_autos
 
+button_tools = """<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=30% id='flabel' class='tit'>flabel</td>
+	<td align=right>
+	<input type='button' class='butt' value='Search Items' onclick="set_shadow('form_sitems');" />
+	</td></tr></table></div>"""
+
 button_autos = """
 	<div class='box' style='background-color: #ccd;'><table width=100%><tr><td>
 	<td align=right>
@@ -250,10 +255,12 @@ def	main (request, conf):
 			<input name='wusid' type='hidden' id='wusid' />
 			<input name='wsid' type='hidden' id='wsid' />
 			<input name='token' type='hidden' id='token' size=76 />
+			<input name='fstat' type='hidden' id='fstat' />
 			</fieldset>"""
 		'''
 		'''
 		out_head(CONFIG.get('System', 'name'))
+		print button_tools
 	#	print button_autos
 		print	"<div id='dbody' class='hidd'>"
 	#	out_form_auto ()

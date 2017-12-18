@@ -52,8 +52,8 @@ def	ppp(obj, oname = 'objName', level = 0):
 		print 'u"%s"' % obj.encode('UTF-8')
 	elif type(obj) == type(''):
 		print '"%s"' % obj
-	else:
-		print obj
+	else:	print obj
+
 err_dict = {
 	0:	'Удачное выполнение операции',
 	1:	'Недействительная сессия',

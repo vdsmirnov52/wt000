@@ -335,12 +335,18 @@ def	main (SCRIPT_NAME, request, referer):
 			#		print "~eval|alert('usid: ' +%s); $('#creatorId').val(%s);" % (usid, usid)
 			#		print "~eval|wialon_timerId = setInterval(function() {set_shadow('continue')}, 120000);"
 			elif shstat == 'login':
-				import  wtools
-				res = 	login(request)
+				wsess = 	login(request)
 				print "~dbody|<pre>"
-				for k in res['user'].keys():
-				#	print k
-					wtools.ppp(res['user'][k], k)
+				import  get
+				get.puser_prp (wsess)
+				'''
+				import  wtools
+			#	wtools.ppp(wsess['user']["prp"], "prp")
+				wtools.ppp(wsess)
+			#	for k in wsess['user'].keys():
+			#		print k
+			#		wtools.ppp(wsess['user'][k], k)
+				'''
 				print "</pre>"
 			elif shstat == 'exit':
 				print "~log|Logout:"
@@ -349,6 +355,15 @@ def	main (SCRIPT_NAME, request, referer):
 				else:	print "<span class='bferr'> you are already logouted </span>"
 				print "~ttoken| Logout"	#, res
 		#		print "~eval|$('#wsid').val(''); $('#wusid').val(''); $('#wuser').html('');"
+			elif shstat == 'form_sitems':
+				if request.has_key('wsid') and request['wsid']:
+					print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_sitems', 'Поиск объектов (элементов) по критериям')
+					import	form_sitems
+					form_sitems.dom('widget', request)
+				else:
+					print """~eval|msg('<span class="bferr"> Not SID </span>');"""	#	print '~error|', "<span class='bferr'> Not SID </span>"
+			elif shstat == 'search_items':
+					print "~set_vals|", request
 			elif shstat == 'continue':
 				if request.has_key('wsid') and request['wsid']:
 					import	twlp
