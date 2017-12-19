@@ -70,10 +70,20 @@ err_dict = {
 	1003:	'Только один запрос разрешается в данный момент времени',
 	}
 def	perror (ecod):
-	try:
-		print "\tERR:", err_dict[ecod]
+	try:	print "\tERR:", err_dict[ecod]
 	except:	print "cod =", ecod
-		
+
+def	sexcept (label = None):
+	if not label:	label = 'except:'
+	exc_type, exc_value = sys.exc_info()[:2]
+	return	"%s: %s %s" % (label, cgi.escape(str(exc_type)), exc_value)
+
+def	escape(s):
+	s = s.replace("&", "&amp;") # Must be done first!
+	s = s.replace("<", "&lt;")
+	s = s.replace(">", "&gt;")
+	return s
+
 sess =		None	# sid - Session Identificator
 account =	None
 

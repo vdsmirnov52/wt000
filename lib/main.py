@@ -99,15 +99,16 @@ def	out_head (title = None):
 	cglob.out_select('users', RES_WUSR, ['token', 'login'], key = None, sopt = 'id="users" onchange="sel_users()"')
 	print	"<span id='ttoken'>ttoken</span></td>"
 	print	"<td><b id='wuser'></b></td>"	#<td>HW:<span id='hw_types'></span></td><td></td>"
-	print	"""<td align=right><input type='button' class='butt' value='Connect' onclick="set_shadow('connect');" />"""
-	print	"""<input type='button' class='butt' value='Exit' onclick="set_shadow('exit');" /></td>"""
+	print	"""<td align=right><input type='button' class='butt' value='Connect' onclick="set_shadow('connect');" title='Установить (обновить) соединение' />"""
+	print	"""<input type='button' class='butt' value='Exit' onclick="set_shadow('exit');" title='Разорвать соединение' /></td>"""
 	print	"""<td align=right><img onclick="document.myForm.submit();" title="Обновить" src="../img/reload3.png"></td>"""
 	print	"</tr></table></div>"
 #	print button_autos
 
 button_tools = """<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=30% id='flabel' class='tit'>flabel</td>
 	<td align=right>
-	<input type='button' class='butt' value='Search Items' onclick="set_shadow('form_sitems');" />
+	<input type='button' class='butt' value='get Zone Data' onclick="set_shadow('form_szone');" title='Геозоны - подробная информация' />
+	<input type='button' class='butt' value='Search Items' onclick="set_shadow('form_sitems');" title='Поиск объектов по критериям' />
 	</td></tr></table></div>"""
 
 button_autos = """
