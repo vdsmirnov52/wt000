@@ -168,7 +168,7 @@ def	new_widow (request, conf):
 	CONFIG = conf
 	try:
 		print "<head> <meta name='Author' content='V.Smirnov'> <title>%s</title>" % CONFIG.get('titWindows', request['wname'])
-		rel_css ((r'/css/style.css', r'/css/calendar.css', r'/css/new_widow.css'))
+		rel_css ((r'/css/wlstyle.css', r'/css/calendar.css', r'/css/new_widow.css'))
 		jscripts ((r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js'))
 		print jsLocal, "</head>"
 		if request.has_key('wname') and request['wname'] == 'listalarms':
@@ -218,7 +218,7 @@ def	init_conf():
 '''
 def	dom_head ():
 		print "<head> <meta name='Author' content='V.Smirnov'> <title>%s</title>" % CONFIG.get('System', 'title')
-		rel_css ((r'/css/style.css', r'/css/calendar.css'))
+		rel_css ((r'/css/wlstyle.css', r'/css/calendar.css'))
 		jscripts(jsList)
 	#	jscripts ((r'/jq/jquery.onajax_answer.js', r'/jq/jquery.js', r'/js/calendar.js', r'/js/check_forms.js'))
 	#	print jsLocal, "</head>"

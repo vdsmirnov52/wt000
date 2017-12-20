@@ -313,7 +313,7 @@ def	search_items (request):
 		data = {'sid': request['wsid'], 'svc': 'core/search_items' , 'params': params}
 		fres, sres = twlp.requesr(data)
 		if fres:
-			print "~dbody|", 
+			print "~dbody|", params
 			print 'totalItemsCount:', sres['totalItemsCount'], '<hr />'
 			for i in sres['items']:
 				if spec['itemsType'] == 'avl_resource':
@@ -331,11 +331,12 @@ def	search_items (request):
 					'''
 					if i.has_key('zg') and i['zg']:
 						print i['id'], i['nm'].encode('UTF-8')
-						print i['id'], i['zg']
+					#	print i['id'], i['zg']
 						for k in i['zg'].keys():
 							print i['zg'][k]['id']
-							print i['zg'][k]['zns']['n'].encode('UTF-8'), i['zg'][k]['zns']['d'].encode('UTF-8')
-						print '<br />'
+							print i['zg'][k]['n'].encode('UTF-8'), i['zg'][k]['d'].encode('UTF-8')
+							print i['zg'][k]['zns']
+							print '<br />'
 				else:
 					'''
 				#	print fres, sres['items']
@@ -410,13 +411,20 @@ def	main (SCRIPT_NAME, request, referer):
 					print "~set_vals|"
 				#	get_items (request, request['itemsType'])	#, func = out_json, **keywords)
 					search_items (request)
-			elif shstat == 'form_szone':	### Zone
+			elif shstat == 'form_szone':		### Геозоны - подробная информация 
 				if request.has_key('wsid') and request['wsid']:
 					print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_szone', 'Геозоны - подробная информация')
 					import form_szone
 					print '~dbody|form_szone'
 					form_szone.dom('dbody', request)
+					form_szone.view_zines('div_left', request)
 				else:	pass
+			elif shstat == 'search_szone':		### Геозоны - подробная информация
+				import	form_szone
+				form_szone.search_szone('div_left', request)
+			elif shstat == 'view_szones':
+				import	form_szone
+				form_szone.view_zines('div_left', request)
 			elif shstat == 'continue':
 				if request.has_key('wsid') and request['wsid']:
 					import	twlp
