@@ -296,57 +296,6 @@ def	is_successfully (label, sres):
 import	twlp
 import	wtools
 
-serr =	lambda txt:	"<span class='bferr'> %s </span>" % txt
-
-def	search_items (request):
-	""" Выполнить запрос "Поиск элементов"	"""
-	params = {'force':1, 'flags':1025, 'from':0, 'to':0}
-	spec = {'itemsType': None, 'propName': '*', 'propValueMask': '*', 'sortType':'sys_name', 'propType':'sys_name'}
-	for k in spec.keys():
-		if request.has_key(k) and request[k]:	spec[k] = request[k]
-	for k in params.keys():
-		if request.has_key(k) and request[k]:	params[k] = int(request[k])
-	try:
-		print spec, "<br />"
-		params['spec'] = spec
-	#	print params, "<br />"
-		data = {'sid': request['wsid'], 'svc': 'core/search_items' , 'params': params}
-		fres, sres = twlp.requesr(data)
-		if fres:
-			print "~dbody|", params
-			print 'totalItemsCount:', sres['totalItemsCount'], '<hr />'
-			for i in sres['items']:
-				if spec['itemsType'] == 'avl_resource':
-					'''
-					print i['id'], i['nm'].encode('UTF-8')
-					if i.has_key('zl') and i['zl']:
-						print i['id'], i['nm'].encode('UTF-8')
-						for k in i['zl'].keys():
-						#	print i['zl'][k]['b']
-							print '<li>'
-							print i['zl'][k]['id']
-							print i['zl'][k]['n'].encode('UTF-8')
-							print i['zl'][k]['d'].encode('UTF-8')
-							print '<br />'
-					'''
-					if i.has_key('zg') and i['zg']:
-						print i['id'], i['nm'].encode('UTF-8')
-					#	print i['id'], i['zg']
-						for k in i['zg'].keys():
-							print i['zg'][k]['id']
-							print i['zg'][k]['n'].encode('UTF-8'), i['zg'][k]['d'].encode('UTF-8')
-							print i['zg'][k]['zns']
-							print '<br />'
-				else:
-					'''
-				#	print fres, sres['items']
-				#	wtools.ppp(sres['items'])
-					'''
-					wtools.ppp(i, 'item')	#out_json(i)	#sres['items'])
-					print '<br />'
-			print	'#'*22
-		else:	print serr (sres)
-	except:	print serr (wtools.sexcept ('search_items"'))
 
 def	login (request):
 	data = {'svc': 'token/login', 'params': {'token':'%s' % request['users']}}
@@ -377,6 +326,9 @@ def	main (SCRIPT_NAME, request, referer):
 		print "~error|~warnn|",# os.environ['SERVER_NAME']
 #		print "~shadow|ajax.maim", request
 #		print "~log|ajax.maim ", time.time(), request
+		if request.has_key ('fstat') and request['fstat'] == 'form_sitems':
+			import	form_sitems
+		
 		if request.has_key ('shstat'):
 			shstat = request['shstat']
 			if shstat == 'connect':
@@ -401,16 +353,19 @@ def	main (SCRIPT_NAME, request, referer):
 				else:	print "<span class='bferr'> you are already logouted </span>"
 				print "~ttoken| Logout"	#, res
 		#		print "~eval|$('#wsid').val(''); $('#wusid').val(''); $('#wuser').html('');"
-			elif shstat == 'form_sitems':	### Items
+			elif shstat == 'form_sitems':		### Items	request[fstat] form_sitems
 				if request.has_key('wsid') and request['wsid']:
 					print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_sitems', 'Поиск объектов (элементов) по критериям')
 					import	form_sitems
 					form_sitems.dom('widget', request)
 				else:	print """~eval|msg('<span class="bferr"> Not SID </span>');"""	#	print '~error|', "<span class='bferr'> Not SID </span>"
-			elif shstat == 'search_items':
+			elif shstat == 'search_items':		### Items
+					import	form_sitems
 					print "~set_vals|"
 				#	get_items (request, request['itemsType'])	#, func = out_json, **keywords)
-					search_items (request)
+					form_sitems.search_items (request)
+			elif shstat == 'select_propName':
+					form_sitems.select_propName(request)
 			elif shstat == 'form_szone':		### Геозоны - подробная информация 
 				if request.has_key('wsid') and request['wsid']:
 					print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_szone', 'Геозоны - подробная информация')

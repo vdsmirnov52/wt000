@@ -76,7 +76,7 @@ def	perror (ecod):
 def	sexcept (label = None):
 	if not label:	label = 'except:'
 	exc_type, exc_value = sys.exc_info()[:2]
-	return	"%s: %s %s" % (label, cgi.escape(str(exc_type)), exc_value)
+	return	"%s: %s %s" % (label, escape(str(exc_type)), exc_value)
 
 def	escape(s):
 	s = s.replace("&", "&amp;") # Must be done first!
