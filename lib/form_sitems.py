@@ -144,6 +144,23 @@ import	wtools, twlp
 
 serr =	lambda txt:	"<span class='bferr'> %s </span>" % txt
 
+def	prn_fild (js, view_filds):
+	""" Вернуть значение поля если есть	"""
+	sres = []
+	for fn in view_filds:
+		if js.has_key(fn) and js[fn]:
+			if type(js[fn]) == dict:
+				for k in js[fn].keys():
+					print "<b> %s %s </b>" % (fn, k)
+					if js[fn][k].has_key('n') and js[fn][k]['n']:
+						print " '%s' " % js[fn][k]['n'].encode('UTF-8')
+						del (js[fn][k]['n'])
+					if js[fn][k].has_key('d') and js[fn][k]['d']:
+						print " '%s' " % js[fn][k]['d'].encode('UTF-8')
+						del (js[fn][k]['d'])
+					print " %s <br />" % str (js[fn][k])
+			else:	print "<b> %s </b> %s <br />" % (fn, str (js[fn]))
+
 def	search_items (request):
 	""" Выполнить запрос "Поиск элементов"	"""
 	params = {'force':1, 'flags':1025, 'from':0, 'to':0}
@@ -171,19 +188,8 @@ def	search_items (request):
 				print "<tr><td>", i['id'], "</td><td>", i['nm'].encode('UTF-8'), i['cls'], "</td></tr>"
 				if not view_filds:	continue
 				print "<tr><td> </td><td>"
-				for fn in view_filds:
-					if i.has_key(fn) and i[fn]:
-						if type(i[fn]) == dict:
-							for k in i[fn].keys():
-								print "<b>", fn, k, "</b>",
-								if i[fn][k].has_key('n') and i[fn][k]['n']:
-									print "'%s'" % i[fn][k]['n'].encode('UTF-8'),
-									del (i[fn][k]['n'])
-								if i[fn][k].has_key('d') and i[fn][k]['d']:
-									print "'%s'" % i[fn][k]['d'].encode('UTF-8'),
-									del (i[fn][k]['d'])
-								print  i[fn][k], "<br />"
-						else:	print "<b>", fn, "</b>",i[fn], "<br />"
+				sjs = prn_fild (i, view_filds)
+				print "</td></tr>"
 				"""
 			#	print spec
 			#	print i['id'], i['nm'].encode('UTF-8')
@@ -214,8 +220,8 @@ def	search_items (request):
 				#	wtools.ppp(sres['items'])
 					'''
 					wtools.ppp(i, 'item')	#out_json(i)	#sres['items'])
-				"""
 				print "</td></tr>"
+				"""
 			#	print '<br />'
 			print "</table>"
 			print	'#'*22
