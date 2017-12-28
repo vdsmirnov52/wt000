@@ -50,7 +50,7 @@ sys.path.insert(0, LIBRARY_DIR)
 	...
 ]
 '''
-rem = '''~div_left|<pre>
+rem =	'''~div_left|<pre>
 Параметры
 	Название 	Описание + Комментарии
 	itemId 		ID ресурса 	
@@ -71,7 +71,7 @@ widget = """~div_right|
 	<div class="box" style="background-color: #ccd;">
 	<table width="100%"><tr><td class='tit'>Геозоны - подробная информация</td>
 	<td align="right">
-	<input class="butt" value="Veew Zones" onclick="set_shadow('view_szones');" type="button" title='Список геозон' />
+	<input class="butt" value="View Zones" onclick="set_shadow('view_szones');" type="button" title='Список геозон' />
 	<input class="butt" value="Search Zone" onclick="set_shadow('search_szone');" type="button" title='Искать геозону' />
 	<input class="butt" value="Reload" onclick="set_shadow('form_szone');" type="button" title='Обновить форму' />
 	<input class="butt" value="Close" onclick="$('#widget').html('Close');" type="button" title='' />
@@ -256,3 +256,10 @@ def	pitem (item):
 def	pzone (zd):
 	return str(zd)
 	
+def	ajax (request):
+	shstat = request['shstat']
+	if shstat == 'search_szone':	### Геозоны - подробная информация
+		search_szone('div_left', request)
+	elif shstat == 'view_szones':
+		view_szones('div_left', request)
+	else:	print "~eval|alert ('form_szone: Unknown shstat: [%s]!');" % request ['shstat']

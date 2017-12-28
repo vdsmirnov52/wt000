@@ -228,3 +228,11 @@ def	search_items (request):
 		else:	print serr (sres)
 	except:	print serr (wtools.sexcept ('search_items"'))
 
+def	ajax (request):
+	shstat = request['shstat']
+	if shstat == 'search_items':
+		print "~set_vals|"
+		search_items (request)
+	elif shstat == 'select_propName':
+		select_propName(request)
+	else:	print "~eval|alert ('form_sitems: Unknown shstat: [%s]!');" % request ['shstat']

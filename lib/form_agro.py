@@ -55,19 +55,20 @@ widget = """~div_right|
 	<div class="grey" style="background-color: #dde; width: 652px; padding: 4px; margin: 4px; top: 54px;">
 	<div class="box" style="background-color: #ccd;">
 	<table width="100%"><tr><td class='tit'>Геозоны - подробная информация</td>
-	<td align="right">
-	<input class="butt" value="Veew Zones" onclick="set_shadow('view_zones');" type="button" title='Список геозон' />
+	<td align="right" id='dt_butt'>
+	<input class="butt" value="Геозоны Wialon" onclick="set_shadow('list_wzones');" type="button" title='Список геозон Wialon' />
 	<input class="butt" value="Search Zone" onclick="set_shadow('search_szone');" type="button" title='Искать геозону' />
-	<input class="butt" value="Reload" onclick="set_shadow('form_szone');" type="button" title='Обновить форму' />
-	<input class="butt" value="Close" onclick="$('#widget').html('Close');" type="button" title='' />
-	</td></tr></table>
+	</td>
+	<td align=right><img onclick="set_shadow('form_agro');" title="Обновить" src="../img/reload3.png"></td>
+	</tr></table>
 	</div>
 	<dt><span class='tit'> itemId </span>	ID ресурса/учётной записи</dt>
-	<dd><input type='text' name='itemId'>	</dd>
-	<dt><span class='tit'> col </span>	массив идентификаторов геозон </dt>
-	<dt><span class='tit'> flags </span>	флаги, определяющие формат возвращаемого JSON </dt>
+	<dd><input type='text' name='itemId' size=6 />
+	<span title='массив идентификаторов геозон'> &nbsp; col: <input id='zcol' type='text' name='zcol' size=44 /></span>
+	<dt><span class='tit'> flags </span> флаги, определяющие формат возвращаемого JSON </dt><dd> <input type='text' name='flags' size=6 value='-1' /></dd>
 	FORM
-	<div id="set_vals" style="border: 1px solid #bbc; color: #668; min-height: 100px">set_vals</div>
+	<div id="set_vals" style="min-height: 300px; max-height: 450px; overflow: auto;">set_vals</div>
+	<div id="ceuulog" style="border: 1px solid #bbc; color: #668; min-height: 100px">set_vals</div>
 	</div>
 	</div>
 	"""
@@ -189,9 +190,9 @@ def	out_filds (js, flags):
 			print p, '<br />'
 #	print '</td></tr>'
 
-def	view_zones (iddom, request):
+def	list_wzones (iddom, request):
 	import	twlp
-	print "~%s|" % iddom
+	print "~ceuulog|"
 	params = {'spec': {'propType': 'sys_name', 'sortType': 'sys_name', 'itemsType': 'avl_resource', 'propName': '*', 'propValueMask': '*'}, 'force': 1, 'to': 0, 'from': 0, 'flags': -1,}
 	data = {'sid': request['wsid'], 'svc': 'core/search_items' , 'params': params}
 	fres, sres = twlp.requesr(data)
@@ -206,22 +207,38 @@ def	view_zones (iddom, request):
 			zgids[i['id']] = i
 		elif i.has_key('zl') and i['zl']:
 			zlids[i['id']] = i
-		else:	print i['id']
+		else:	pass	#print i['id']
 #	print zgids[371]['zg']
-	print zlids.keys(), zgids.keys()
-	print 'totalItemsCount:', sres['totalItemsCount'], len(zlids), len(zgids), '<hr />'
-	print "<table cellpadding=2 cellspacing=0><tr><th>Id</th><th>ZZZ Наименование</th><th>Описание</th><th></th></tr>"
+#	print zlids.keys(), zgids.keys()
+	print 'totalItemsCount:', sres['totalItemsCount'], len(zgids), len(zlids)
+	print "<br>", zgids.keys(), "<br>", zlids.keys()
+	print "~%s|" % iddom
+	print "<table id='tbl_wzones' cellpadding=2 cellspacing=0><tr><th>Id</th><th>ZZZ Наименование</th><th>Описание</th><th></th></tr>"
 	for i in zgids.keys():
 		item = zgids[i]
+		'''
+		K = int (item['id'])
+		print "<tr><td>", i, K
+		print "<tr id='%05d' class='tit'><td>" % (100*K), item['id'], "</td><td>", item['nm'].encode('UTF-8'), "</td><td> ZZZ </td><td></td></tr>"
+		'''
 		pitem (item)
 	for i in zlids.keys():
 		pitem (zlids[i])
 	print "</table>"
+	print """<script language='JavaScript'>
+	$('#tbl_wzones tr.line')
+	.hover (function () { $('#tbl_wzones tr').removeClass('mark'); $(this).addClass('mark'); $('#shadow').text('')})
+	.click (function (e) { $('#tbl_wzones tr').removeClass('mark'); $(this).addClass('mark'); alert('ZZZ'); });
+//		$.ajax ({data: 'shstat=mark_row&table=tbl_wzones&pkname=id_contr&idrow=' +$(this).get(0).id +'&X=' +e.clientX +'&Y=' +e.clientY +'&' +$('form').serialize() }); });
+	</script>"""
 
 def	pitem (item):
-		print "<tr class='mark tit'><td>", item['id'], "</td><td>", item['nm'].encode('UTF-8'), "</td><td> item </td><td></td></tr>"	#, item['d'].encode('UTF-8'), "</td><td></td></tr>"
+		K = int (item['id'])
+#		print item['id'], K
+		print "<tr id='%05d' class='line tit'><td>" % (100*K) , item['id'], "</td><td>", item['nm'].encode('UTF-8'), "</td><td> item </td><td></td></tr>"
+#		return
 		for k in item['zg'].keys():
-			print "<tr><td>", k, "</td><td>", item['zg'][k]['n'].encode('UTF-8'), "</td><td>", item['zg'][k]['d'].encode('UTF-8'), "</td><td>"
+			print "<tr id='%05d' class='line'><td>" % (100*K +int(k)), k, "</td><td>", item['zg'][k]['n'].encode('UTF-8'), "</td><td>", item['zg'][k]['d'].encode('UTF-8'), "</td><td>"
 			print item['zg'][k]['zns']
 			print "</td><td></td></tr>"
 			'''
@@ -239,4 +256,6 @@ def	ajax (request):
 	print "~shadow2|ZZZ form_agro.ajax", request['shstat']
 	shstat = request['shstat']
 	iddom = 'div_left'
-	if shstat == 'view_zones':	view_zones (iddom, request) 
+	if shstat == 'list_wzones':
+		list_wzones ('set_vals', request) 
+	else:	print "~eval|alert ('form_agro: Unknown shstat: [%s]!');" % request ['shstat']
