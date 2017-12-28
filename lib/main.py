@@ -107,8 +107,9 @@ def	out_head (title = None):
 
 button_tools = """<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=30% id='flabel' class='tit'>flabel</td>
 	<td align=right>
-	<input type='button' class='butt' value='get Zone Data' onclick="set_shadow('form_szone');" title='Геозоны - подробная информация' />
-	<input type='button' class='butt' value='Search Items' onclick="set_shadow('form_sitems');" title='Поиск объектов по критериям' />
+	<input type='button' class='butt' value='Agro Module' onclick="document.myForm.fstat.value = 'form_agro'; set_shadow('form_agro');" title='Агро модуль - инструменты' />
+	<input type='button' class='butt' value='get Zone Data' onclick="document.myForm.fstat.value = 'form_szone'; set_shadow('form_szone');" title='Геозоны - подробная информация' />
+	<input type='button' class='butt' value='Search Items' onclick="document.myForm.fstat.value = 'form_sitems'; set_shadow('form_sitems');" title='Поиск объектов по критериям' />
 	</td></tr></table></div>"""
 
 button_autos = """

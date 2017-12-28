@@ -100,10 +100,14 @@ if __name__ == '__main__':
 	"INSERT INTO whusers (login, token) VALUES ('V.Smirnov', 'c5a76d06f77af04aa4c9fa0699d465c299B67214D257083C5E790742520C44F9EA0E3D80')",
 	]
 	lite = dbsqlite()	#'wialon.db')
+	'''
 	print lite.execute("INSERT INTO whosts (host_name) VALUES (?)", ('ZZZZZ',)), lite.last_error
 	for sql in sqls:
 		print sql, lite.execute(sql), lite.last_error
 	print 'SQLite version:', lite.get_row('SELECT SQLITE_VERSION()')
 	print 'get_rows:', lite.get_rows('SELECT * FROM whosts WHERE id_wh > 0'), lite.last_error, lite.desc
 	print 'get_table:', lite.get_table ('whusers'), lite.last_error
-	print help(sqlite3)
+	'''
+	print 'get_row', lite.get_row("SELECT * FROM whosts WHERE id_wh = 1;")
+	print 'get_row', lite.get_row("SELECT * FROM whusers WHERE id_whu = 1;")
+#	print help(sqlite3)

@@ -321,89 +321,135 @@ def	logout(request):
 	res = json.load(urllib.urlopen(r"http://wialon.rnc52.ru/wialon/ajax.html?svc=core/logout&params={}&sid=%s" % sid))
 	print "\tlogout", res
 
+def	get_dbconfig ():
+	try:
+		import	dbsqlite
+		dbconf = dbsqlite.dbsqlite(os.path.join(LIBRARY_DIR, 'config.db'))
+		token = dbconf.get_row("SELECT token FROM whusers WHERE id_whu = 1;")[0]
+		host_name = dbconf.get_row("SELECT host_name FROM whosts WHERE id_wh = 1;")[0]
+		print """~eval|document.myForm.users.value = '%s';
+		document.myForm.token.value = '%s';
+		document.myForm.set_whost.value = '%s';
+		""" % (token, token, host_name)
+		print "~log|"
+		import	twlp
+		sres = twlp.send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % token})
+		if sres:	is_successfully ("Connect:", sres)
+	except:	pass
+
+serr =	lambda txt:	"<span class='bferr'> %s </span>" % txt
+
 def	main (SCRIPT_NAME, request, referer):
+	ss_base = ['login', 'connect', 'exit']
 	try:
 		print "~error|~warnn|",# os.environ['SERVER_NAME']
 #		print "~shadow|ajax.maim", request
 #		print "~log|ajax.maim ", time.time(), request
-		if request.has_key ('fstat') and request['fstat'] == 'form_sitems':
-			import	form_sitems
 		
-		if request.has_key ('shstat'):
-			shstat = request['shstat']
-			if shstat == 'connect':
-				print "~log|"
-				import	twlp
-				sres = twlp.send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % request['token']})	#twlp.usr2token['wialon']})
-				if sres:
-					is_successfully ("Connect:", sres)
-			#		print "~eval|set_shadow('get_users');"
-			#		print "~eval|alert('usid: ' +%s); $('#creatorId').val(%s);" % (usid, usid)
-			#		print "~eval|wialon_timerId = setInterval(function() {set_shadow('continue')}, 120000);"
-			elif shstat == 'login':
-				wsess = 	login(request)
+		if not request.has_key ('shstat'):
+			print "~shadow|", serr("Отсутствует request[shstat]"), request
+#		else:
+		shstat = request['shstat']
+		print	"~shadow|shstat", shstat
+		if not (request.has_key('wsid') and request['wsid']):
+			res = get_dbconfig()
+		if request.has_key('fstat'):
+			if request['fstat'] == 'form_agro':
+				import	form_agro
+				if shstat == 'form_agro':
+					print "~eval|$('#flabel').html('Агосервис');"
+					form_agro.dom('dbody', request)
+				else:
+					form_agro.ajax(request)
+				return
+			elif request['fstat'] == 'form_sitems':
+				import	form_sitems		
+				if shstat == 'form_sitems':		### Items	request[fstat] form_sitems
+					print "~eval|$('#flabel').html('%s');" % 'Поиск объектов (элементов) по критериям'
+					form_sitems.dom('widget', request)
+				elif shstat == 'search_items':		### Items
+					print "~set_vals|"
+					form_sitems.search_items (request)
+				elif shstat == 'select_propName':
+					form_sitems.select_propName(request)
+				else:	form_sitems.ajax(request)
+				return
+				'''
+				print "###", shstat
+				'''
+		print	"~shadow|###"
+		if shstat == 'connect':
+			print "~log|"
+			import	twlp
+			sres = twlp.send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % request['token']})	#twlp.usr2token['wialon']})
+			if sres:
+				is_successfully ("Connect:", sres)
+		#		print "~eval|set_shadow('get_users');"
+		#		print "~eval|alert('usid: ' +%s); $('#creatorId').val(%s);" % (usid, usid)
+		#		print "~eval|wialon_timerId = setInterval(function() {set_shadow('continue')}, 120000);"
+		elif shstat == 'login':
+			wsess = 	login(request)
+			if not (request.has_key('fstat') and request['fstat']):
 				print "~dbody|<pre>"
 				import  get
 				get.puser_prp (wsess)
 				print "</pre>"
-			elif shstat == 'exit':
-				print "~log|Logout:"
-				if request.has_key('wsid') and request['wsid'] != '':
-					res = logout(request)
-				else:	print "<span class='bferr'> you are already logouted </span>"
-				print "~ttoken| Logout"	#, res
-		#		print "~eval|$('#wsid').val(''); $('#wusid').val(''); $('#wuser').html('');"
-			elif shstat == 'form_sitems':		### Items	request[fstat] form_sitems
-				if request.has_key('wsid') and request['wsid']:
-					print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_sitems', 'Поиск объектов (элементов) по критериям')
-					import	form_sitems
-					form_sitems.dom('widget', request)
-				else:	print """~eval|msg('<span class="bferr"> Not SID </span>');"""	#	print '~error|', "<span class='bferr'> Not SID </span>"
-			elif shstat == 'search_items':		### Items
-					import	form_sitems
-					print "~set_vals|"
-				#	get_items (request, request['itemsType'])	#, func = out_json, **keywords)
-					form_sitems.search_items (request)
-			elif shstat == 'select_propName':
-					form_sitems.select_propName(request)
-			elif shstat == 'form_szone':		### Геозоны - подробная информация 
-				if request.has_key('wsid') and request['wsid']:
-					print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_szone', 'Геозоны - подробная информация')
-					import form_szone
-					print '~dbody|form_szone'
-					form_szone.dom('dbody', request)
-					form_szone.view_zines('div_left', request)
-				else:	pass
-			elif shstat == 'search_szone':		### Геозоны - подробная информация
-				import	form_szone
-				form_szone.search_szone('div_left', request)
-			elif shstat == 'view_szones':
-				import	form_szone
-				form_szone.view_zines('div_left', request)
-			elif shstat == 'continue':
-				if request.has_key('wsid') and request['wsid']:
-					import	twlp
-					sres = twlp.send_post ({'svc': 'core/batch', 'params': "{}", 'sid': "%s" % request['wsid']})
-				#	print "~log|", str(sres)
-				else:	print "~error|", request
-			elif shstat == 'get_avl_unit':		get_avl_unit (request)
-			elif shstat == 'get_hw_types':		get_hw_types (request)
-			elif shstat == 'get_users':		get_items (request, 'user')
-			elif shstat == 'create_unit':
-				fres, sres = create_unit (request, 1)
-				if fres:
-					time.sleep(2)
-					create_unit (request, 2, sres)
-				else:	print "~error|<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
-			else:
-				print "~eval|alert ('Unknown shstat: [%s]!');" % request ['shstat']
-
-			if not (request.has_key('wsid') and request['wsid']):
-				print """~eval|msg('<span class="bferr"> Not SID </span>');"""
+		elif shstat == 'exit':
+			print "~log|Logout:"
+			if request.has_key('wsid') and request['wsid'] != '':
+				res = logout(request)
+			else:	print "<span class='bferr'> you are already logouted </span>"
+			print "~ttoken| Logout"	#, res
+	#		print "~eval|$('#wsid').val(''); $('#wusid').val(''); $('#wuser').html('');"
+			'''
+		elif shstat == 'form_sitems':		### Items	request[fstat] form_sitems
+			if request.has_key('wsid') and request['wsid']:
+				print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_sitems', 'Поиск объектов (элементов) по критериям')
+				import	form_sitems
+				form_sitems.dom('widget', request)
+			else:	print """~eval|msg('<span class="bferr"> Not SID </span>');"""	#	print '~error|', "<span class='bferr'> Not SID </span>"
+		elif shstat == 'search_items':		### Items
+				import	form_sitems
+				print "~set_vals|"
+			#	get_items (request, request['itemsType'])	#, func = out_json, **keywords)
+				form_sitems.search_items (request)
+		elif shstat == 'select_propName':
+				form_sitems.select_propName(request)
+			'''
+		elif shstat == 'form_szone':		### Геозоны - подробная информация 
+			if request.has_key('wsid') and request['wsid']:
+				print "~eval|$('#fstat').val('%s'); $('#flabel').html('%s');" % ('form_szone', 'Геозоны - подробная информация')
+				import form_szone
+				print '~dbody|form_szone'
+				form_szone.dom('dbody', request)
+				form_szone.view_szones('div_left', request)
+			else:	pass
+		elif shstat == 'search_szone':		### Геозоны - подробная информация
+			import	form_szone
+			form_szone.search_szone('div_left', request)
+		elif shstat == 'view_szones':
+			import	form_szone
+			form_szone.view_szones('div_left', request)
+		elif shstat == 'continue':
+			if request.has_key('wsid') and request['wsid']:
+				import	twlp
+				sres = twlp.send_post ({'svc': 'core/batch', 'params': "{}", 'sid': "%s" % request['wsid']})
+			#	print "~log|", str(sres)
+			else:	print "~error|", request
+		elif shstat == 'get_avl_unit':		get_avl_unit (request)
+		elif shstat == 'get_hw_types':		get_hw_types (request)
+		elif shstat == 'get_users':		get_items (request, 'user')
+		elif shstat == 'create_unit':
+			fres, sres = create_unit (request, 1)
+			if fres:
+				time.sleep(2)
+				create_unit (request, 2, sres)
+			else:	print "~error|<span style='color: #a00; font-weight: bold;'>", sres, "</span>"
 		else:
-			print "~shadow|"
-			wdgerror ("Отсутствует request[shstat]",  txt = "request: %s" % str(request), obj = SS.objpkl)
-		#	out_widget('warnn', tit = "Отсутствует request[shstat]",  txt = "request: %s" % str(request), obj = SS.objpkl)
+			print "~eval|alert ('Unknown shstat: [%s]!');" % request ['shstat']
+
+#		if not (request.has_key('wsid') and request['wsid']):
+#			print """~eval|msg('<span class="bferr"> Not SID </span>');"""
 
 	except:
 		exc_type, exc_value = sys.exc_info()[:2]
