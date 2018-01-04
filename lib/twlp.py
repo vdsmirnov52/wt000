@@ -176,7 +176,7 @@ if __name__ == "__main__":
 	except:
 		ppp(sres, 'send_post')
 		exc_type, exc_value = sys.exc_info()[:2]
-		print "EXCEPT:", exc_type, exc_value
+		print "EXCEPT twlp:", exc_type, exc_value
 	"""
 #	print auto_wlp
 	auto_wlp['general']['n'] = "ГОС-123456"

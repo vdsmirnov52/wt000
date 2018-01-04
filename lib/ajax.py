@@ -305,9 +305,10 @@ def	login (request):
 #	sres = json.load(urllib.urlopen(url))
 	if b:	#sres: 
 		is_successfully ('Login:', sres)
+		return sres
 	else:
 		print	"<span class='bferr'>", sres, "</span>"
-	return	sres
+		return	b
 
 def	logout(request):
 	if request.has_key('wsid') and request['wsid'] != '':
@@ -362,9 +363,13 @@ def	main (SCRIPT_NAME, request, referer):
 					is_successfully ("Connect:", sres)
 			elif shstat == 'login':
 				wsess = login(request)
-				if not (request.has_key('fstat') and request['fstat']):
-					import  get
-					print "~dbody|<pre>", get.puser_prp (wsess), "</pre>"
+				if not wsess:
+					print request
+				else:
+					if not (request.has_key('fstat') and request['fstat']):
+						import  get
+						print "~dbody|<pre>", get.puser_prp (wsess), "</pre>"
+					print 'wsess:', wsess
 			elif shstat == 'exit':
 				print "Logout:"
 				if request.has_key('wsid') and request['wsid'] != '':
@@ -426,4 +431,4 @@ def	main (SCRIPT_NAME, request, referer):
 
 	except:
 		exc_type, exc_value = sys.exc_info()[:2]
-		print "~log|<span class='bferr'>EXCEPT:", cgi.escape(str(exc_type)), exc_value, "</span>"
+		print "~log|<span class='bferr'>EXCEPT ajax:", cgi.escape(str(exc_type)), exc_value, "</span>"

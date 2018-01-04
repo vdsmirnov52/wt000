@@ -93,5 +93,5 @@ if __name__ == "__main__":
 		'''
 	except:
 		exc_type, exc_value = sys.exc_info()[:2]
-		print "EXCEPT:", exc_type, exc_value
+		print "EXCEPT w.cgi:", exc_type, exc_value
 

@@ -238,9 +238,11 @@ def	main (request, conf):
 	TOKENS = dict(CONFIG.items('usr2token'))
 	dom_head()
 	BDCOBF = init_conf ()
-	if TOKENS:
-		BDCOBF.execute ("update whusers SET token = '%s', token_create = now() WHERE id_whu != 6;" % TOKENS['wialon'])
-		BDCOBF.execute ("update whusers SET token = '%s', token_create = now() WHERE id_whu = 6;" % TOKENS['v.smirnov'])
+	if TOKENS:	### WWW unable to open database file	невозможно открыть файл базы данных для изменений 
+		BDCOBF.execute ("update whusers SET token = '%s', token_create = %d WHERE id_whu != 2;" % (TOKENS['wialon'], time.time()))
+		BDCOBF.execute ("update whusers SET token = '%s', token_create = %d WHERE id_whu = 2;" % (TOKENS['v.smirnov'], time.time()))
+	#	print "update whusers SET token = '%s', token_create = %d WHERE id_whu = 2;" % (TOKENS['v.smirnov'], time.time())
+	#	print BDCOBF.last_error 
 	elif RES_WUSR:
 		d = RES_WUSR[0]
 		for r in RES_WUSR[1]:	TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))
