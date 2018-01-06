@@ -207,7 +207,7 @@ def	init_conf():
 	global	DBDS, RES_WHST, RES_WUSR, DB_WL
 	import	dbsqlite
 
-	dbconf = dbsqlite.dbsqlite(os.path.join(LIBRARY_DIR, 'config.db'))
+	dbconf = dbsqlite.dbsqlite(os.path.join(r'/dblite/', 'config.db'))
 
 	RES_WHST = dbconf.get_table("whosts", "id_wh > 0 ORDER BY host_name")
 	RES_WUSR = dbconf.get_table("whusers", "id_whu > 0 ORDER BY id_whu")
@@ -241,8 +241,12 @@ def	main (request, conf):
 	if TOKENS:	### WWW unable to open database file	невозможно открыть файл базы данных для изменений 
 		BDCOBF.execute ("update whusers SET token = '%s', token_create = %d WHERE id_whu != 2;" % (TOKENS['wialon'], time.time()))
 		BDCOBF.execute ("update whusers SET token = '%s', token_create = %d WHERE id_whu = 2;" % (TOKENS['v.smirnov'], time.time()))
-	#	print "update whusers SET token = '%s', token_create = %d WHERE id_whu = 2;" % (TOKENS['v.smirnov'], time.time())
-	#	print BDCOBF.last_error 
+		'''
+		print "update whusers SET token = '%s', token_create = %d WHERE id_whu = 2;" % (TOKENS['v.smirnov'], time.time())
+		print BDCOBF.last_error 
+		rrr = BDCOBF.get_row("SELECT * FROM whusers WHERE id_whu = 2;")
+		print rrr, BDCOBF.last_error
+		''' 
 	elif RES_WUSR:
 		d = RES_WUSR[0]
 		for r in RES_WUSR[1]:	TOKENS.append("{name: '%s', token: '%s'}" % (r[d.index('login')], r[d.index('token')]))

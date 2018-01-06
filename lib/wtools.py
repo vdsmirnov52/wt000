@@ -137,7 +137,7 @@ def	init_conf ():
 	global	RES_WHST, RES_WUSR, usr2token
 	import	dbsqlite
 
-	dbconf = dbsqlite.dbsqlite(os.path.join(LIBRARY_DIR, 'config.db'))
+	dbconf = dbsqlite.dbsqlite(os.path.join(r'/dblite/', 'config.db'))	#LIBRARY_DIR, 'config.db'))
 	RES_WHST = dbconf.get_table("whosts", "id_wh > 0 ORDER BY id_wh")
 	RES_WUSR = dbconf.get_table("whusers", "id_whu > 0 ORDER BY id_whu")
 

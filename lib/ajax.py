@@ -325,7 +325,7 @@ def	logout(request):
 def	get_dbconfig ():
 	try:
 		import	dbsqlite
-		dbconf = dbsqlite.dbsqlite(os.path.join(LIBRARY_DIR, 'config.db'))
+		dbconf = dbsqlite.dbsqlite(os.path.join(r'/dblite/', 'config.db'))	#LIBRARY_DIR, 'config.db'))
 		token = dbconf.get_row("SELECT token FROM whusers WHERE id_whu = 1;")[0]
 		host_name = dbconf.get_row("SELECT host_name FROM whosts WHERE id_wh = 1;")[0]
 		print """~eval|
