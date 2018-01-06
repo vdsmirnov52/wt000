@@ -28,7 +28,7 @@ jsLocal =  """$(document).ready(function () {
 	$.ajaxSetup({ url: "w.cgi?this=ajax", type: "post", error: onAjaxError, success: onAjaxSuccess, timeout: 30000 });
 	$('#dbody').css({'height': (-210 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});
 	$('#div_table').css({'height': (-333 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});
-	$('#log').css({'height': '100px', 'overflow': 'auto'});
+	$('#log').css({'height': '90px', 'overflow': 'auto'});
 //	init_users();
 })
 /////////////////////////////////////////////
@@ -90,7 +90,7 @@ function	create_auto () {
 
 def	out_head (title = None):
 	code_ssys = -1
-	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=200px>"
+	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=120px>"
 	if title:	print "<span class='tit'>", title, "</span>"
 #	print	"""<td width=700>User: <select name='users"' id="users" onchange="sel_users()"><option></option></select> <span id='ttoken'>ttoken</span></td>"""
 	print   "<td width=200px>Host:"

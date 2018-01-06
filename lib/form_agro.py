@@ -63,12 +63,12 @@ widget = """~div_right|
 	</tr></table>
 	</div>
 	<dt><span class='tit'> itemId </span>	ID ресурса/учётной записи</dt>
-	<dd><input type='text' name='itemId' size=6 />
+	<dd><input type='text' id='itemId' name='itemId' size=6 />
 	<span title='массив идентификаторов геозон'> &nbsp; col: <input id='zcol' type='text' name='zcol' size=44 /></span>
 	<dt><span class='tit'> flags </span> флаги, определяющие формат возвращаемого JSON </dt><dd> <input type='text' name='flags' size=6 value='-1' /></dd>
 	FORM
 	<div id="set_vals" style="min-height: 300px; max-height: 450px; overflow: auto;">set_vals</div>
-	<div id="ceuulog" style="border: 1px solid #bbc; color: #668; min-height: 100px">set_vals</div>
+	<div id="rlog" style="border: 1px solid #bbc; color: #668; min-height: 100px">set_vals</div>
 	</div>
 	</div>
 	"""
@@ -90,7 +90,7 @@ def	search_szone(iddom, request):
 	import	twlp
 	ztype = {1: 'линия', 2: 'полигон', 3: 'круг'}
 
-	print "~set_vals|"
+	print "~rlog|"
 	if not (request.has_key('itemId') and request['itemId'].isdigit()):
 		print serr ("Отсутствует или невернр задан 'itemId'.")
 		return
@@ -109,7 +109,7 @@ def	search_szone(iddom, request):
 		if 'flag_' in k[:5] and request[k] == 'on':
 			flags += int (k[5:])
 	if flags == 0:	flags = -1
-	print '<hr />'
+#	print '<hr />'
 	itemId = int(request['itemId'])
 	data = {'sid': request['wsid'], 'svc': 'resource/get_zone_data', 'params': {'itemId': itemId, 'col': cols, 'flags': flags}}
 #	print data
@@ -123,7 +123,6 @@ def	search_szone(iddom, request):
 	for i in sres:
 		print '<tr class="tit"><td>', i['rid'], i['id'], '</td><td>', i['n'].encode('UTF-8'), '</td><td>', i['d'].encode('UTF-8')
 		print time.strftime("</td><td>mt: %Y.%m.%d %T", time.localtime (i['mt']))
-	#	print float(i['c'])/0xff000000
 		op = float(i['c'])/0xff000000
 		print op
 		print "<span style='background-color: #%x; opacity: %.2f;, color: #%x;'> nin: %s, max: %s </span>" % (0xffffff & int(i['c']), op, int(i['tc']), i['min'], i['max'])
@@ -192,7 +191,7 @@ def	out_filds (js, flags):
 
 def	list_wzones (iddom, request):
 	import	twlp
-	print "~ceuulog|"
+	print "~rlog|"
 	params = {'spec': {'propType': 'sys_name', 'sortType': 'sys_name', 'itemsType': 'avl_resource', 'propName': '*', 'propValueMask': '*'}, 'force': 1, 'to': 0, 'from': 0, 'flags': -1,}
 	data = {'sid': request['wsid'], 'svc': 'core/search_items' , 'params': params}
 	fres, sres = twlp.requesr(data)
@@ -211,9 +210,9 @@ def	list_wzones (iddom, request):
 #	print zgids[371]['zg']
 #	print zlids.keys(), zgids.keys()
 	print 'totalItemsCount:', sres['totalItemsCount'], len(zgids), len(zlids)
-	print "<br>", zgids.keys(), "<br>", zlids.keys()
+	print "<br>zgids.keys:", zgids.keys(), "<br>zlids.keys:", zlids.keys()
 	print "~%s|" % iddom
-	print "<table id='tbl_wzones' cellpadding=2 cellspacing=0><tr><th>Id</th><th>ZZZ Наименование</th><th>Описание</th><th></th></tr>"
+	print "<table id='tbl_wzones' cellpadding=2 cellspacing=0><tr><th>Id</th><th> Наименование</th><th>Описание</th><th></th></tr>"
 	for i in zgids.keys():
 		item = zgids[i]
 		'''
@@ -225,20 +224,22 @@ def	list_wzones (iddom, request):
 	for i in zlids.keys():
 		pitem (zlids[i])
 	print "</table>"
-	print """<script language='JavaScript'>
-	$('#tbl_wzones tr.line')
-	.hover (function () { $('#tbl_wzones tr').removeClass('mark'); $(this).addClass('mark'); $('#shadow').text('')})
-	.click (function (e) { $('#tbl_wzones tr').removeClass('mark'); $(this).addClass('mark'); alert('ZZZ'); });
-//		$.ajax ({data: 'shstat=mark_row&table=tbl_wzones&pkname=id_contr&idrow=' +$(this).get(0).id +'&X=' +e.clientX +'&Y=' +e.clientY +'&' +$('form').serialize() }); });
+	'''	###	????????????????? 
+	print """<script type='text/javascript'>
+	$('#tbl_wzones tr.line').hover (function () { $('#tbl_wzones tr').removeClass('mark'); $(this).addClass('mark'); $('#shadow').text('')})
+			.click (function (e) { $('#tbl_wzones tr').removeClass('mark'); $(this).addClass('mark');
+			$.ajax ({data: 'shstat=mark_row&table=tbl_wzones&pkname=id_contr&idrow=' +$(this).get(0).id +'&X=' +e.clientX +'&Y=' +e.clientY +'&' +$('form').serialize() }); });
 	</script>"""
+	'''
 
 def	pitem (item):
 		K = int (item['id'])
 #		print item['id'], K
-		print "<tr id='%05d' class='line tit'><td>" % (100*K) , item['id'], "</td><td>", item['nm'].encode('UTF-8'), "</td><td> item </td><td></td></tr>"
+		print """<tr id='%05d' class='line tit' onclick=" $('#itemId').val('%s'); $('#tbl_wzones tr').removeClass('mark'); $('#%05d').addClass('mark'); "><td>""" % ((100*K), str(item['id']), (100*K))
+		print item['id'], "</td><td>", item['nm'].encode('UTF-8'), "</td><td> item </td><td></td></tr>"
 #		return
 		for k in item['zg'].keys():
-			print "<tr id='%05d' class='line'><td>" % (100*K +int(k)), k, "</td><td>", item['zg'][k]['n'].encode('UTF-8'), "</td><td>", item['zg'][k]['d'].encode('UTF-8'), "</td><td>"
+			print "<tr id='%05d' class='mark'><td>" % (100*K +int(k)), k, "</td><td>", item['zg'][k]['n'].encode('UTF-8'), "</td><td>", item['zg'][k]['d'].encode('UTF-8'), "</td><td>"
 			print item['zg'][k]['zns']
 			print "</td><td></td></tr>"
 			'''
@@ -258,4 +259,6 @@ def	ajax (request):
 	iddom = 'div_left'
 	if shstat == 'list_wzones':
 		list_wzones ('set_vals', request) 
+	elif shstat == 'search_szone':	### Геозоны - подробная информация
+		search_szone('div_left', request)
 	else:	print "~eval|alert ('form_agro: Unknown shstat: [%s]!');" % request ['shstat']
