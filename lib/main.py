@@ -93,7 +93,7 @@ def	out_head (title = None):
 	print "<div class='box' style='background-color: #ccd;'><table width=100%><tr><td width=120px>"
 	if title:	print "<span class='tit'>", title, "</span>"
 #	print	"""<td width=700>User: <select name='users"' id="users" onchange="sel_users()"><option></option></select> <span id='ttoken'>ttoken</span></td>"""
-	print   "<td width=200px>Host:"
+	print   "<td width=220px>Host:"
 	cglob.out_select('set_whost', RES_WHST, ['host_name', 'host_name'], key = None, sopt = 'onchange="document.myForm.whost.value = document.myForm.set_whost.value;" ')
 	print	"</td><td>wUser:"
 	cglob.out_select('users', RES_WUSR, ['token', 'login'], key = None, sopt = 'id="users" onchange="sel_users()"')
@@ -257,14 +257,14 @@ def	main (request, conf):
 #	print """<html xmlns="http://www.w3.org/1999/xhtml">"""
 	try:
 		print "<body>"
-		print """<form name='myForm' action='/cgi/w.cgi' method='post'><fieldset class='hidd'>
+		print """<form name='myForm' action='%s' method='post'><fieldset class='hidd'>
 			<!--input name='wuser' type='hidden' id='wuser' /-->
 			<input name='whost' type='hidden' id='whost' />
 			<input name='wusid' type='hidden' id='wusid' />
 			<input name='wsid' type='hidden' id='wsid' />
 			<input name='token' type='hidden' id='token' size=76 />
 			<input name='fstat' type='hidden' id='fstat' />
-			</fieldset>"""
+			</fieldset>""" % os.environ['SCRIPT_NAME']
 		'''
 		'''
 		out_head(CONFIG.get('System', 'name'))

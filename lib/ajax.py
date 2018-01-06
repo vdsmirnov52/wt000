@@ -12,6 +12,9 @@ import	json
 LIBRARY_DIR = r"/home/smirnov/Wialon/lib/"		# Путь к рабочей директории (библиотеке)
 sys.path.insert(0, LIBRARY_DIR)
 
+import	twlp
+import	wtools
+
 WHOST =	r"http://wialon.rnc52.ru/wialon/"
 
 def	out_json(obj, **keywords):
@@ -61,7 +64,8 @@ def	out_pos (pos):
 def	sssss (s):
 	try:
 		return	"%s" % s
-	except:	return  "%s" % s.encode('UTF-8')
+	except UnicodeEncodeError:
+		return  "%s" % s.encode('UTF-8')
 
 def	out_flds (flds):
 	if not flds:	return	"flds None"
@@ -293,10 +297,6 @@ def	is_successfully (label, sres):
 		print "~eval|$('#wsid').val('%s');" % sid	#sres['eid']
 	except:	print label, "<span class='bferr'> Result:</span>", sres
 
-import	twlp
-import	wtools
-
-
 def	login (request):
 	data = {'svc': 'token/login', 'params': {'token':'%s' % request['users']}}
 	b, sres = twlp.requesr(data, host = request['whost'])
@@ -369,7 +369,8 @@ def	main (SCRIPT_NAME, request, referer):
 					if not (request.has_key('fstat') and request['fstat']):
 						import  get
 						print "~dbody|<pre>", get.puser_prp (wsess), "</pre>"
-					print 'wsess:', wsess
+				#	print 'wsess:', wsess
+				#	out_json(wsess['user'], iddom='dbody')
 			elif shstat == 'exit':
 				print "Logout:"
 				if request.has_key('wsid') and request['wsid'] != '':
