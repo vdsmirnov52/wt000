@@ -85,12 +85,18 @@ def	check_inn (sid, itemId, dfres, item):
 		print "\tDoule INN", dfres
 		return
 
+	add_atts = False
 	fld = flds[0]
 	k, dfinn = dfres[fld]
+#	query = "SELECT t.* a.autos FROM transports t JOIN LEFT atts a ON a.autos = t.id_ts WHERE gosnum = '%s';" % item['nm'].encode('UTF-8')
 	query = "SELECT * FROM transports WHERE gosnum = '%s'" % item['nm'].encode('UTF-8') 
 	dts = dbcon.get_dict(query)
 	if dts:		return
-
+	'''
+	if dts and dts['autos']:
+		return
+	else:	add_atts = True
+	'''
 	query = "SELECT id_org, inn, bm_ssys, label, bname, region FROM organizations WHERE inn = %s" % dfinn['v']	# id_org, bm_ssys, region =>	transports
 	print "\t", k, fld, dfinn, query
 	dorg = dbcon.get_dict(query)
