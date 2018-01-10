@@ -45,12 +45,6 @@ def	get_autos (sid):
 			j = 0
 			for item in  res['items']:
 				j += 1
-				'''
-				if 'A-48046351' == item['nm']:
-					ppp (item)
-					break
-				else:	continue
-				'''
 				print "%6d" % item['id'],
 				print item['nm'].encode('UTF-8'), ppos(item['pos']),
 				if item['pos']:
@@ -58,6 +52,8 @@ def	get_autos (sid):
 				else:	tpos = None
 				if item.has_key('lmsg'):
 					print plmsg(item['lmsg'], tpos),
+				print '\t', item['uid'],
+				'''
 				if item.has_key('aflds') and item['aflds']:
 					print "\taflds[",
 					for k in item['aflds'].keys():
@@ -65,13 +61,14 @@ def	get_autos (sid):
 						sv = item['aflds'][k]['v'].encode('UTF-8')
 						print "'%s': '%s'," % (sn, sv) ,
 					print "]",
+				'''
 				if item.has_key('flds') and item['flds']:
-					print "\tflds[", item['flds'],
-					print "]",
+					prn_filds (item['flds'], 'flds')
 				#	ppp(item['aflds'], 'aflds')
+				if item.has_key('aflds') and item['aflds']:
+					prn_filds (item['aflds'], 'aflds')
 				if item.has_key('pflds') and item['pflds']:
-					print "\tpflds[", item['pflds'] ,
-					print "]",
+					prn_filds (item['pflds'], 'pflds')
 				print ""
 		#		ppp (item, "%3d" %j)
 		elif res.has_key('afields') and res['afields']:
@@ -149,12 +146,44 @@ def	get_zones (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):	# zones_library
 
 def	get_user (sid, flags = 1 | 0x0040 | 0x0080 | 0x0100):
 	print "#"*33, "get_user"
-	res = request (sid, svss['search_items'], "'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':''},'force':1,'flags':%s,'from':0,'to':0" % flags)
-	ppp(res)
+	res = request (sid, svss['search_items'], "'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':'sys_user_creator'},'force':1,'flags':%s,'from':0,'to':0" % flags)
+#	ppp(res)
+	for r in res['items']:
+#		if not r.has_key('pop'):
+		if r['prp'].has_key('znsvlist'):
+			znsvlist = json.loads(r['prp']['znsvlist'])
+			if not znsvlist.has_key('e'):	continue
+			print r['id'], r['nm'], r['crt']
+			print '\tznsvlist',	znsvlist['e'].keys()	# r['prp']['znsvlist']
+			for u in r['prp'].keys():
+				if u[:4] == 'monu':
+					ju = json.loads(r['prp'][u])
+					if not ju:	continue
+				#	print '\t', u, ju, len(ju)
+					print '\t', u, r['prp'][u], len(ju)
+		#	ppp (r['prp'], 'prp znsvlist')
+		if r['flds']:	# r.has_key('flds'):
+			prn_filds(r['flds'])
+		if r.has_key('aflds') and  r['aflds']:
+			prn_filds(r['aflds'])
+		if r.has_key('pflds') and  r['pflds']:
+			prn_filds(r['pflds'])
+	print "="*33, "get_user"
+	
+def	prn_filds(flds, label = None, frmt = '\t%22s:\t%s'):
+	if not flds:	return
+	if label:
+		print '\t%s' % label
+	for j in  xrange(len(flds)):
+		sj = str(1+j)
+	#	print '\t\t', sj, flds[sj]['n'], flds[sj]['v']
+		if not flds[sj]['v']:	continue
+		print frmt % (flds[sj]['n'].encode('UTF-8'), flds[sj]['v'].encode('UTF-8'))
 	
 def	puser_prp (sess):
 	sid = sess['eid']
 	print "#"*33, '"user_namt": "%s"' % sess["user"]["nm"]
+	print sess["user"]["prp"].keys()
 	for u in sess["user"]["prp"].keys():
 		if u == "monugv":
 			print sess["user"]["prp"][u]
@@ -174,16 +203,17 @@ def	puser_prp (sess):
 
 if __name__ == "__main__":
 	usr2token = init_conf ()
+	print ''
 #	sess = {}
 	sess = login(usr2token['wialon'])
 #	sess = login(usr2token['V.Smirnov'])
+#	puser_prp (sess)
+
 	sid = sess['eid']
-#	get_autos (sid)
+	get_autos (sid)
 #	get_hw_types(sid)
-#	get_user (sid)
-	get_zones (sid)
-	print ''
-	puser_prp (sess)
+#	get_user (sid, -1)
+#	get_zones (sid)
 
 	'''
 	UUU = 'http://wialon.rnc52.ru/wialon/ajax.html?svc=core/create_unit&params={"creatorId":31,"name":"test_LLL","hwTypeId":"9","dataFlags":257}&sid=' + sid

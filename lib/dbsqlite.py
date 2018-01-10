@@ -13,6 +13,11 @@ class dbsqlite:
 	get_rows (query, [vals])	- Читает несколько записей      Возвращает: rows = [(row1), (row2), ...]
 	get (query, fall, [vals])       - Исполняет запрос и читает данные. Если fall: 1 - fetchall() иначе 0 - fetchone())
 	get_table (tname, [swhere], [cols])	- Возвращает (desc, rows) или None
+Примеры использования vals 
+	C подставновкой по порядку на места знаков вопросов:
+		cursor.execute("SELECT Name FROM Artist ORDER BY Name LIMIT ?", ('2'))
+	C использованием именнованных замен:
+		cursor.execute("SELECT Name from Artist ORDER BY Name LIMIT :limit", {"limit": 3})
 Переменные:
 	desc = []	- Список наименования полей последнего запроса
 	last_error      = (exc_type, exc_value) последняя оштбка доступа к БД
