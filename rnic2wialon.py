@@ -85,22 +85,27 @@ def	check_inn (sid, itemId, dfres, item):
 		print "\tDoule INN", dfres
 		return
 
-	add_atts = False
+	add_atts = 0
 	fld = flds[0]
 	k, dfinn = dfres[fld]
-#	query = "SELECT t.* a.autos FROM transports t JOIN LEFT atts a ON a.autos = t.id_ts WHERE gosnum = '%s';" % item['nm'].encode('UTF-8')
-	query = "SELECT * FROM transports WHERE gosnum = '%s'" % item['nm'].encode('UTF-8') 
+	query = "SELECT t.*, a.autos FROM transports t LEFT JOIN atts a ON a.autos = t.id_ts WHERE gosnum = '%s';" % item['nm'].encode('UTF-8')
+#	query = "SELECT * FROM transports WHERE gosnum = '%s'" % item['nm'].encode('UTF-8') 
 	dts = dbcon.get_dict(query)
+	'''
 	if dts:		return
 	'''
-	if dts and dts['autos']:
-		return
-	else:	add_atts = True
-	'''
+	if dts:
+		if dts['autos']:
+			add_atts = dts['autos']
+	if add_atts:	return
+
 	query = "SELECT id_org, inn, bm_ssys, label, bname, region FROM organizations WHERE inn = %s" % dfinn['v']	# id_org, bm_ssys, region =>	transports
-	print "\t", k, fld, dfinn, query
+#	print "\t", k, fld, dfinn, query
 	dorg = dbcon.get_dict(query)
-	if not dorg:	return
+	if not dorg:
+		print "Отсутствует организация ИНН: %s" % dfinn['v']
+		return
+#	print "ZZZ add_atts", add_atts, item['nm'], type(dorg)
 
 	# INSERT INTO transports (gosnum, marka, modele, vin, vinnumber, year, ptsnumber, registrationnumber, registrationdate, id_org, bm_ssys, region)
 	'''
@@ -143,22 +148,17 @@ def	check_inn (sid, itemId, dfres, item):
 	
 	querys = []
 	sdate = time.strftime("%Y-%m-%d %T", time.localtime(item['pos']['t']))
-	querys.append("INSERT INTO transports (%s) VALUES (%s)" % (", ".join(cols), ", ".join(vals)))
-	'''
-	for k in item.keys():
-		if type (item[k]) in (dict, list, tuple):	continue
-		elif not item[k]:	continue
-		else:	print k, item[k], "\t",
-	'''
-#	print "\nZZZZ\t", item['uid'], item['ph'], item['ph2'], item['hw'], item['psw']
-	querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', '%s', -%d, (SELECT max(id_ts) FROM transports))" % (
-		HOST, item['uid'].encode('UTF-8'), item['ph'].encode('UTF-8'), item['ph2'].encode('UTF-8'), sdate, itemId))
+	if dts and add_atts == 0:	# reate ATT only
+	#	print "\tZZZ Create ATT only"
+		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', '%s', -%d, %d)" % (
+			HOST, item['uid'].encode('UTF-8'), item['ph'].encode('UTF-8'), item['ph2'].encode('UTF-8'), sdate, itemId, dts['id_ts']))
+	else:
+		querys.append("INSERT INTO transports (%s) VALUES (%s)" % (", ".join(cols), ", ".join(vals)))
+	#	print "\nZZZZ\t", item['uid'], item['ph'], item['ph2'], item['hw'], item['psw']
+		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', '%s', -%d, (SELECT max(id_ts) FROM transports))" % (
+			HOST, item['uid'].encode('UTF-8'), item['ph'].encode('UTF-8'), item['ph2'].encode('UTF-8'), sdate, itemId))
 #	print "####\t", querys
 	print "####\t", ";\n".join(querys), dbcon.qexecute (";\n".join(querys))
-#	twlp.ppp(item['prms'], "prms")
-#	twlp.ppp(item['rfc'], "rfc")
-#	twlp.ppp(item['pflds'], "pflds")
-#	os.exit()
 
 def	set_last_date (ts_list):
 	""" Обновить last_date в БД contracts	"""
@@ -187,7 +187,7 @@ def	set_last_date (ts_list):
 	#	else:	print "<<<"
 
 def	fix_pos (ida, uid, nm, pos, inn = None):
-	""" Запмсать в БД wialon pos & inn	"""
+	""" Запмсать в БД wialon.last_pos pos & inn	"""
 	if not dbwialon:	return
 
 	if inn and inn[1]['v']:
@@ -306,7 +306,7 @@ if __name__ == "__main__":
 			if o[0] == '-t':	tests ()
 			if o[0] == '-a':	is_exec = 'autos'
 			if o[0] == '-p':
-				FL_fix_pos = True
+				FL_fix_pos = True		### UPDATE wialon.last_pos
 				dbwialon = dbtools.dbtools(DBDS['wialon'])
 
 		dbcon = dbtools.dbtools(DBDS['contracts']) #	contracts
