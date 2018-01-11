@@ -150,7 +150,7 @@ def	check_inn (sid, itemId, dfres, item):
 	sdate = time.strftime("%Y-%m-%d %T", time.localtime(item['pos']['t']))
 	if dts and add_atts == 0:	# reate ATT only
 	#	print "\tZZZ Create ATT only"
-		querys.append("UPDATE transports SET bm_ssys = %d, region = %d, bm_status = 12, device_id = -%d WHERE id_ts = %d" % (dorg['bm_ssys'], dorg['region'], itemId, dts['id_ts']))	#dorg['id_org']))
+		querys.append("UPDATE transports SET bm_ssys = %d, region = %d, bm_status = 12, device_id = -%d WHERE id_ts = %d" % (dorg['bm_ssys'], dorg['region'], itemId, dts['id_ts']))
 		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', '%s', -%d, %d)" % (
 			HOST, item['uid'].encode('UTF-8'), item['ph'].encode('UTF-8'), item['ph2'].encode('UTF-8'), sdate, itemId, dts['id_ts']))
 	else:
