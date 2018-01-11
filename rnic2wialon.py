@@ -78,7 +78,7 @@ def	check_fflags (fl_name, flags, sid, itemId):
 			print twlp.requesr (data, host = HOST)
 			time.sleep(0.1)
 	return	inn
-	
+
 def	check_inn (sid, itemId, dfres, item):
 	flds = dfres.keys()
 	if len(flds) > 1:
@@ -150,6 +150,7 @@ def	check_inn (sid, itemId, dfres, item):
 	sdate = time.strftime("%Y-%m-%d %T", time.localtime(item['pos']['t']))
 	if dts and add_atts == 0:	# reate ATT only
 	#	print "\tZZZ Create ATT only"
+		querys.append("UPDATE transports SET bm_ssys = %d, region = %d, bm_status = 12, device_id = -%d WHERE id_ts = %d" % (dorg['bm_ssys'], dorg['region'], itemId, dts['id_ts']))	#dorg['id_org']))
 		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', '%s', -%d, %d)" % (
 			HOST, item['uid'].encode('UTF-8'), item['ph'].encode('UTF-8'), item['ph2'].encode('UTF-8'), sdate, itemId, dts['id_ts']))
 	else:
@@ -202,9 +203,96 @@ def	fix_pos (ida, uid, nm, pos, inn = None):
 		query = "INSERT INTO last_pos (ida, idd, nm, x, y, t, inn) VALUES (%d, '%s', '%s', %f, %f, %d, %s);" % (ida, suid, nm, pos['x'], pos['y'], pos['t'], sinn)
 	if not dbwialon.qexecute(query):	print query
 
+marks_inn = [u'INN', u'inn', u'ИНН', u'инн', u'oinn']
+
+def	search_inn (flname, flags):
+	sinn = None
+	update = {}
+	for k in flags.keys():
+		if not flags[k]['v']:	continue
+#		print "\t", k, flags[k]['id'], flags[k]['n'], flags[k]['v']	#, type(flags[k]['v'])
+		if '\\xd0'in flags[k]['v']:	# зачистить дефектные поля
+			flags[k]['v'] = ''
+			update[k] = flags[k]
+		if flags[k]['n'] in marks_inn:
+			if len (flags[k]['v']) in [10,12] and flags[k]['v'].isdigit():
+				sinn = flags[k]['v']
+			else:	print '\tBad INN:', flname, flags[k]['n'], flags[k]['v'], len (flags[k]['v'])
+
+	if update:	print 'ZZZ update', update
+	return	sinn
+
+def	set_inn_by_autos (sid, itemIds, inn):
+	flags = 1 +8 +128
+	for iid in itemIds:
+		data = {'sid': sid, 'svc': 'core/search_item', 'params':{'id': int(iid), 'flags': flags}}
+		b, sres = twlp.requesr(data, host = HOST)
+		if not b:	continue
+		r = sres['item']
+	#	print b, sres.keys(), sres['flags']
+		jinn = search_inn ('flds', r['flds'])
+		if jinn and jinn == inn:		continue
+
+		time.sleep(0.1)
+		k = 1
+		if r.has_key('aflds'):
+			k += len(r['aflds'])
+			jinn = search_inn ('aflds', r['aflds'])
+			if jinn and jinn == inn:	continue
+		print '\t', iid, sres['item']['nm'], inn, jinn
+		data = {'sid': sid, 'svc': 'item/update_admin_field', 'params':{"itemId": int(iid), 'id': 0, "n": 'INN', "v": inn.encode('UTF-8'), "callMode":"create"}}
+		b, upres = twlp.requesr (data, host = HOST)
+		print b, upres, data
+												 
+		break
+
+	print "###", type(iid)
+
+def	users_inn ():
+	""" Поиск Организаций имеющих ИНН	"""
+#	help (users_inn)
+	print	'Поиск Организаций c ИНН\n\tUSER:', USER, '\tHOST:', HOST
+	if not usr2token.has_key(USER):
+		print	"Unknown user Wialon '%s'." % USER
+		return
+	data = {'svc': 'token/login', 'params': {'token':'%s' % usr2token[USER] }}
+	b, sres = twlp.requesr(data, host = HOST)
+	if not b:
+		print b, sres
+		return
+
+	sid = sres['eid']
+	flags = -1
+	data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':'user','propName':'sys_name','propValueMask':'*','sortType':'sys_user_creator'},'force':1,'flags': flags,'from':0,'to':0}}
+	b, sres = twlp.requesr(data, host = HOST)
+	if not b:
+		print b, sres
+		return
+	print 'ZZZ', sid, b
+	for r in sres['items']:
+#		if not r.has_key('pop'):
+		sinn = search_inn ('flds', r['flds'])
+		if sinn:
+			print 'ZZZZZZZZZZZZZZZZZZ sinn', sinn
+
+			print r['id'], r['nm'], r['crt']
+			for u in r['prp'].keys():
+				if u == 'monu':
+					set_inn_by_autos (sid, json.loads(r['prp'][u]), sinn)	# .encode('UTF-8'))
+				'''
+				if u[:4] == 'monu':
+					ju = json.loads(r['prp'][u])
+					if not ju:	continue
+				#	print '\t', u, ju, len(ju)
+					print '\t', u, r['prp'][u], len(ju)
+				'''
+		
+	print "="*33, "get_user"
+
+
 def	autos_inn ():
 	""" Поиск ТС имеющих ИНН	"""
-	print	'USER:', USER, '\tHOST:', HOST, '\tTS_in_work:', TS_in_work
+	print	'Поиск ТС имеющих ИНН\n\tUSER:', USER, '\tHOST:', HOST, '\tTS_in_work:', TS_in_work
 	if not usr2token.has_key(USER):
 		print	"Unknown user Wialon '%s'." % USER
 		return
@@ -256,13 +344,13 @@ def	autos_inn ():
 #	json.loads('["foo", {"bar":["baz", null, 1.0, 2]}]') ==> obj
 #	help (json)
 '''
-
 def	outhelp ():
 	print "outhelp", sys.argv
 	print """
 	-t	Test (проверка наличия соединения с сервером Wialon БД РНИС)
 	-a	Поиск ТС имеющих ИНН, проверка наличия в БД contracts и добавление (при необходимости)
 	-aw	Поиск ТС имеющих ИНН и обновление atts.last_date & atts.bm_wtime
+	-u	Поиск Организаций имеющих ИНН, проверка наличия у них ТС имеющих ИНН (при необходимости)
 	-U	USER = [wialon] or v.smirnov
 	-h	Настоящая справка.
 	"""
@@ -295,7 +383,7 @@ if __name__ == "__main__":
 	print "Start PID: %i\t" % os.getpid(), sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
 	is_exec = None
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'thawpU:')
+		optlist, args = getopt.getopt(sys.argv[1:], 'thuawpU:')
 		if not optlist:		outhelp()
 
 
@@ -304,6 +392,7 @@ if __name__ == "__main__":
 			if o[0] == '-w':	TS_in_work = True
 			if o[0] == '-h':	outhelp ()
 			if o[0] == '-t':	tests ()
+			if o[0] == '-u':	is_exec = 'users'
 			if o[0] == '-a':	is_exec = 'autos'
 			if o[0] == '-p':
 				FL_fix_pos = True		### UPDATE wialon.last_pos
@@ -311,6 +400,7 @@ if __name__ == "__main__":
 
 		dbcon = dbtools.dbtools(DBDS['contracts']) #	contracts
 		if is_exec == 'autos':	autos_inn ()
+		if is_exec == 'users':	users_inn ()
 
 	except	getopt.GetoptError:
 		print "Ошибка в параметрах!\n",	outhelp()
