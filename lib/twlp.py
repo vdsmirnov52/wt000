@@ -114,8 +114,11 @@ def	send_post (pdict = None, pfile = None, host = None):
 	headers = {
 		'content-type': 'multipart/form-data; boundary=' + boundary,
 		'User-Agent' : 'Mozilla 5.10'}
-	req = urllib2.Request(url, headers=headers, data=body)
-	res = urllib2.urlopen(req)
+	try:
+		req = urllib2.Request(url, headers=headers, data=body)
+		res = urllib2.urlopen(req)
+	except urllib2.URLError:
+		return (-1, 'EXCEPT urllib2.URLError IN send_post')
 	return json.loads(res.read())
 
 DEBUG = False

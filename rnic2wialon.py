@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
 import  os, sys, time
@@ -32,6 +32,8 @@ def	get_pflds (flags):
 		pflds[flags[k]['n']] = flags[k]['v']
 	return pflds
 
+marks_inn = [u'INN', u'inn', u'ИНН', u'инн', u'oinn']	### варианты метки поля для ИНН в Wialon
+
 def	check_fflags (fl_name, flags, sid, itemId):
 	""" Проверка наличия флагов 'flds', 'aflds'	"""
 	inn = None
@@ -45,7 +47,7 @@ def	check_fflags (fl_name, flags, sid, itemId):
 			flags[k]['v'] = ''
 			update[k] = flags[k]
 			continue
-		if flags[k]['n'] in [u'INN', u'inn', u'ИНН', u'oinn']:
+		if flags[k]['n'] in marks_inn:		# [u'INN', u'inn', u'ИНН', u'oinn']:
 			if not len(flags[k]['v']) in [10, 12]:
 				delete.append(flags[k]['id'])
 			elif inn and inn[0]['INN'] == flags[k]['v']:
@@ -77,7 +79,7 @@ def	check_fflags (fl_name, flags, sid, itemId):
 			data = {'sid': sid, 'svc': svc, 'params':{"itemId": itemId, "id": k, "n": n, "v": v, "callMode":"update"}}
 			print twlp.requesr (data, host = HOST)
 			time.sleep(0.1)
-	return	inn
+	return	inn	########################
 
 def	check_inn (sid, itemId, dfres, item):
 	flds = dfres.keys()
@@ -90,10 +92,7 @@ def	check_inn (sid, itemId, dfres, item):
 	k, dfinn = dfres[fld]
 	query = "SELECT t.*, a.autos FROM transports t LEFT JOIN atts a ON a.autos = t.id_ts WHERE gosnum = '%s';" % item['nm'].encode('UTF-8')
 #	query = "SELECT * FROM transports WHERE gosnum = '%s'" % item['nm'].encode('UTF-8') 
-	dts = dbcon.get_dict(query)
-	'''
-	if dts:		return
-	'''
+	dts = dbContr.get_dict(query)
 	if dts:
 		if dts['autos']:
 			add_atts = dts['autos']
@@ -101,21 +100,11 @@ def	check_inn (sid, itemId, dfres, item):
 
 	query = "SELECT id_org, inn, bm_ssys, label, bname, region FROM organizations WHERE inn = %s" % dfinn['v']	# id_org, bm_ssys, region =>	transports
 #	print "\t", k, fld, dfinn, query
-	dorg = dbcon.get_dict(query)
+	dorg = dbContr.get_dict(query)
 	if not dorg:
 		print "Отсутствует организация ИНН: %s" % dfinn['v']
 		return
-#	print "ZZZ add_atts", add_atts, item['nm'], type(dorg)
 
-	# INSERT INTO transports (gosnum, marka, modele, vin, vinnumber, year, ptsnumber, registrationnumber, registrationdate, id_org, bm_ssys, region)
-	'''
-	1 1 vehicle_type Трактор
-	3 3 year 2014
-	2 2 brand Беларус
-	5 5 vin 12036049
-	4 4 registration_plate 52НН5225
-	6 6 model 1221.2
-	'''
 	cols = ['gosnum', 'id_org', 'bm_ssys', 'region', 'bm_status', 'device_id']
 	vals = ["'%s'" % item['nm'].encode('UTF-8'), "%d" % dorg['id_org'], "%d" % dorg['bm_ssys'], "%d" % dorg['region'], '12', "-%d" % itemId]
 #	print "\t", dorg
@@ -126,7 +115,6 @@ def	check_inn (sid, itemId, dfres, item):
 		if '\\xd0' in pflds[k]:	continue
 	
 		if k == 'vehicle_type':
-		#	cols.append('type')
 			cols.append('rem')
 			vals.append("'%s'" % pflds[k].encode('UTF-8'))
 		elif k == 'year':
@@ -147,19 +135,21 @@ def	check_inn (sid, itemId, dfres, item):
 		else:	pass
 	
 	querys = []
-	sdate = time.strftime("%Y-%m-%d %T", time.localtime(item['pos']['t']))
+	if item.has_key('pos') and item['pos']:
+		sdate = time.strftime("'%Y-%m-%d %T'", time.localtime(item['pos']['t']))
+	else:	sdate = 'NULL'
 	if dts and add_atts == 0:	# reate ATT only
 	#	print "\tZZZ Create ATT only"
 		querys.append("UPDATE transports SET bm_ssys = %d, region = %d, bm_status = 12, device_id = -%d WHERE id_ts = %d" % (dorg['bm_ssys'], dorg['region'], itemId, dts['id_ts']))
-		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', '%s', -%d, %d)" % (
+		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', %s, -%d, %d)" % (
 			HOST, item['uid'].encode('UTF-8'), item['ph'].encode('UTF-8'), item['ph2'].encode('UTF-8'), sdate, itemId, dts['id_ts']))
 	else:
 		querys.append("INSERT INTO transports (%s) VALUES (%s)" % (", ".join(cols), ", ".join(vals)))
 	#	print "\nZZZZ\t", item['uid'], item['ph'], item['ph2'], item['hw'], item['psw']
-		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', '%s', -%d, (SELECT max(id_ts) FROM transports))" % (
+		querys.append("INSERT INTO atts (mark, modele, uin, sim_1, sim_2, last_date, device_id, autos) VALUES ('WialonHost', '%s', '%s', '%s', '%s', %s, -%d, (SELECT max(id_ts) FROM transports))" % (
 			HOST, item['uid'].encode('UTF-8'), item['ph'].encode('UTF-8'), item['ph2'].encode('UTF-8'), sdate, itemId))
 #	print "####\t", querys
-	print "####\t", ";\n".join(querys), dbcon.qexecute (";\n".join(querys))
+	print "####\t", ";\n".join(querys), dbContr.qexecute (";\n".join(querys))		########################
 
 def	set_last_date (ts_list):
 	""" Обновить last_date в БД contracts	"""
@@ -169,14 +159,14 @@ def	set_last_date (ts_list):
 	dts_list = dict(ts_list)
 	query = "SELECT id_ts, gosnum, a.id_att, a.last_date, a.bm_wtime, a.mark FROM transports t LEFT JOIN atts a ON id_ts = autos WHERE gosnum IN ('%s')" % "', '".join(dts_list.keys())
 #	print query
-	row = dbcon.get_rows (query)
-	if not row:	return
+	rows = dbContr.get_rows (query)
+	if not rows:	return
 	sttm = time.localtime(time.time())
 	tm_year, tm_mon, tm_mday = sttm[:3]
 	stime = time.strftime("%Y-%m-%d %T", time.localtime(time.time()))
 	jstime = time.strftime("%Y-%m-%d %T", time.localtime(time.time()- 7200))
 	print "\nОбновить last_date", tm_year, tm_mon, tm_mday, stime, jstime
-	for r in row:
+	for r in rows:
 		id_ts, gosnum, id_att, last_date, bm_wtime, mark = r
 		if mark != 'WialonHost':		continue
 		if not dts_list.has_key(gosnum):	continue
@@ -184,26 +174,29 @@ def	set_last_date (ts_list):
 	#	print id_ts, gosnum, id_att, last_date, bm_wtime, mark, jstime
 		if jstime > str(last_date):	# > jstime:
 			query = "UPDATE atts SET last_date = '%s', bm_wtime = bm_wtime | 512 WHERE id_att = %d;" % (jstime, id_att)
-			print gosnum, "\t", query, dbcon.qexecute(query)
+			print gosnum, "\t", query, dbContr.qexecute(query)
 	#	else:	print "<<<"
+	#	set_worktime (r)
+
+def	set_worktime (row):
+	print 'set_worktime:', row
 
 def	fix_pos (ida, uid, nm, pos, inn = None):
 	""" Запмсать в БД wialon.last_pos pos & inn	"""
-	if not dbwialon:	return
+	if not dbWialon:	return
 
 	if inn and inn[1]['v']:
 		sinn = inn[1]['v'].encode('UTF-8')
 	else:	sinn = 'NULL'
 	suid = str(uid)
 #	print "uid %s " %uid, sinn, inn
-	row = dbwialon.get_row("SELECT id_lp FROM last_pos WHERE ida = %d;" % ida)
+	row = dbWialon.get_row("SELECT id_lp FROM last_pos WHERE ida = %d;" % ida)
 	if row:
 		query = "UPDATE last_pos SET idd='%s', nm='%s', x=%f, y=%f, t=%d, inn=%s WHERE ida = %d;" % (suid, nm, pos['x'], pos['y'], pos['t'], sinn, ida)
+		check_work_ts(row[0], pos['t'])
 	else:
 		query = "INSERT INTO last_pos (ida, idd, nm, x, y, t, inn) VALUES (%d, '%s', '%s', %f, %f, %d, %s);" % (ida, suid, nm, pos['x'], pos['y'], pos['t'], sinn)
-	if not dbwialon.qexecute(query):	print query
-
-marks_inn = [u'INN', u'inn', u'ИНН', u'инн', u'oinn']
+	if not dbWialon.qexecute(query):	print query
 
 def	search_inn (flname, flags):
 	sinn = None
@@ -242,15 +235,13 @@ def	set_inn_by_autos (sid, itemIds, inn):
 		print '\t', iid, sres['item']['nm'], inn, jinn
 		data = {'sid': sid, 'svc': 'item/update_admin_field', 'params':{"itemId": int(iid), 'id': 0, "n": 'INN', "v": inn.encode('UTF-8'), "callMode":"create"}}
 		b, upres = twlp.requesr (data, host = HOST)
-		print b, upres, data
-												 
-		break
-
-	print "###", type(iid)
+		if not b:
+			print '\t', b, upres, data
+	#	break
+#	print "###", type(iid)
 
 def	users_inn ():
 	""" Поиск Организаций имеющих ИНН	"""
-#	help (users_inn)
 	print	'Поиск Организаций c ИНН\n\tUSER:', USER, '\tHOST:', HOST
 	if not usr2token.has_key(USER):
 		print	"Unknown user Wialon '%s'." % USER
@@ -268,14 +259,11 @@ def	users_inn ():
 	if not b:
 		print b, sres
 		return
-	print 'ZZZ', sid, b
+#	print 'ZZZ', sid, b
 	for r in sres['items']:
-#		if not r.has_key('pop'):
 		sinn = search_inn ('flds', r['flds'])
 		if sinn:
-			print 'ZZZZZZZZZZZZZZZZZZ sinn', sinn
-
-			print r['id'], r['nm'], r['crt']
+			print r['id'], r['nm'], r['crt'], '\t', sinn
 			for u in r['prp'].keys():
 				if u == 'monu':
 					set_inn_by_autos (sid, json.loads(r['prp'][u]), sinn)	# .encode('UTF-8'))
@@ -283,12 +271,9 @@ def	users_inn ():
 				if u[:4] == 'monu':
 					ju = json.loads(r['prp'][u])
 					if not ju:	continue
-				#	print '\t', u, ju, len(ju)
 					print '\t', u, r['prp'][u], len(ju)
 				'''
-		
-	print "="*33, "get_user"
-
+	print "="*33, "users_inn"	########################
 
 def	autos_inn ():
 	""" Поиск ТС имеющих ИНН	"""
@@ -298,6 +283,7 @@ def	autos_inn ():
 		return
 	data = {'svc': 'token/login', 'params': {'token':'%s' % usr2token[USER] }}
 	b, sres = twlp.requesr(data, host = HOST)
+
 	if not b:
 		print b, sres
 		return
@@ -314,9 +300,11 @@ def	autos_inn ():
 	for item in sres['items']:
 		chres = {}
 		itemId = item['id']
-		if not item['pos']:			continue
+		if TS_in_work and not item['pos']:	continue
+#		if not item['pos']:			continue
 		if not ((item.has_key('aflds') and item['aflds']) or item['flds']):
-			if FL_fix_pos:	fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'])
+			if FL_fix_pos and item.has_key('pos') and item['pos']:
+				fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'])
 			continue
 		j += 1
 #		if j > 11:	break
@@ -329,28 +317,93 @@ def	autos_inn ():
 			fres = check_fflags ('aflds', item['aflds'], sid, itemId)
 			if fres:	chres ["afres"] = fres
 
-		if FL_fix_pos:	fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'], fres)
+		if FL_fix_pos and item.has_key('pos') and item['pos']:
+			fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'], fres)
 
 		if chres:
-			print item['nm'].encode('UTF-8'), out_pos(item['pos'])
+		#	print item['id'], '\t', item['nm'].encode('UTF-8'), out_pos(item['pos'])
 			if TS_in_work:
 				ts_list.append((item['nm'].encode('UTF-8'), item['pos']['t']))
 			else:
 				check_inn (sid, itemId, chres, item)
 		continue
 	if ts_list:	set_last_date (ts_list)
-'''
-#	print json.dumps(sres)
-#	json.loads('["foo", {"bar":["baz", null, 1.0, 2]}]') ==> obj
-#	help (json)
-'''
+	print "="*33, "autos_inn"	########################
+
+def	update_work_ts (sttmr):
+	tm_mon, tm_mday = time.localtime(sttmr)[1:3]
+	dd = 24*3600
+	itm = (int(sttmr/dd)-tm_mday) *dd
+	print 'update_work_ts', tm_mon, tm_mday, time.strftime("%Y-%m-%d %T", time.localtime(itm)) 
+	query = "SELECT id_lp, t, inn FROM last_pos WHERE t > %d;" % itm
+	rows = dbWialon.get_rows (query)
+	if not rows:	return
+	for r in rows:
+		id_lp, t, inn = r
+		if not inn:	continue
+		check_work_ts(id_lp, t, tm_mon)
+	print "="*33, "update_work_ts"	########################
+
+def	check_work_ts(id_lp, t, tm_mon = None):
+#	print id_lp, t, tm_mon
+	stm = time.strftime("%Y-%m-%d %T", time.localtime(t))
+	wquery = "SELECT * FROM work_ts WHERE id_lp = %d;" % id_lp
+	dts = dbWialon.get_dict (wquery)
+	if dts:
+		uquery = None
+	#	print dts, dts['where_set'], stm
+		if stm > str(dts['where_set']):
+			if dts['jw_time'] > 3 and dts['is_work'] == 0:
+				uquery = "UPDATE work_ts SET is_work = 1, jw_time = jw_time +1, where_set = '%s' WHERE id_lp = %d;" % (stm, id_lp)
+			else:	uquery = "UPDATE work_ts SET jw_time = jw_time +1, where_set = '%s' WHERE id_lp = %d;" % (stm, id_lp)
+			print uquery, dbWialon.qexecute (uquery)
+	else:
+		if tm_mon == None:	tm_mon = time.localtime(time.time())[1]
+		uquery = "INSERT INTO work_ts (id_lp, month, is_work, jw_time, where_set) VALUES (%d, %d, %d, %d, '%s');" % (id_lp, tm_mon, 0, 1, stm)
+		print uquery, dbWialon.qexecute (uquery)
+
+def	init_work_ts (sttmr):
+	""" Инициализация work_ts - начоло сбора данных о работе машин на Wialon	"""
+	tm_mon = time.localtime(sttmr)[1]
+	print 'init_work_ts', time.localtime(sttmr)
+	query = "SELECT gosnum, bm_wtime, bm_status, last_date FROM wtransports WHERE bm_status & 3072 = 0 AND amark = 'WialonHost' ORDER BY bm_wtime"
+	rows = dbContr.get_rows (query)
+	if not rows:	return
+	unknown_nm = []
+	print "Clear work_ts", dbWialon.qexecute ("DELETE FROM work_ts;")
+	for r in rows:
+		gosnum, bm_wtime = r[:2]
+		if r[-1]:
+			where_set = "'%s'" % str(r[-1])
+		else:	where_set = 'NULL'
+	#	print r[0], r[1], r[2:], gosnum, bm_wtime
+		wquery = "SELECT * FROM last_pos WHERE nm = '%s';" % gosnum
+		dts = dbWialon.get_dict (wquery)
+		if dts:
+			print gosnum, bm_wtime, '\t=',
+	#		print dts['id_lp'], dts['nm']
+			if (bm_wtime & 0x1ff) > 0:
+				jw_time = 3
+				is_work = 1
+			elif bm_wtime == 0x200:
+				is_work = 0
+				jw_time = 1
+			else:	jw_time = is_work = 0
+			iquery = "INSERT INTO work_ts (id_lp, month, is_work, jw_time, where_set) VALUES (%d, %d, %d, %d, %s);" % (dts['id_lp'], tm_mon, is_work, jw_time, where_set)
+			print iquery, dbWialon.qexecute(iquery)
+		else:	unknown_nm.append(gosnum)
+	if unknown_nm:
+		print "Unknown gosnum: '%s'" % "', '".join(unknown_nm)
+	print "="*33, "init_work_ts"	########################
+	
+
 def	outhelp ():
 	print "outhelp", sys.argv
 	print """
 	-t	Test (проверка наличия соединения с сервером Wialon БД РНИС)
 	-a	Поиск ТС имеющих ИНН, проверка наличия в БД contracts и добавление (при необходимости)
 	-aw	Поиск ТС имеющих ИНН и обновление atts.last_date & atts.bm_wtime
-	-u	Поиск Организаций имеющих ИНН, проверка наличия у них ТС имеющих ИНН (при необходимости)
+	-u	Поиск Организаций имеющих ИНН, проверка наличия ТС (добавление ИНН при необходимости)
 	-U	USER = [wialon] or v.smirnov
 	-h	Настоящая справка.
 	"""
@@ -377,7 +430,7 @@ if __name__ == "__main__":
 	sttmr = time.time()
 	TS_in_work = False
 	FL_fix_pos = False
-	dbwialon = None
+	dbWialon = None
 	USER = 'wialon'
 	HOST = 'wialon.rnc52.ru'
 	print "Start PID: %i\t" % os.getpid(), sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
@@ -396,9 +449,14 @@ if __name__ == "__main__":
 			if o[0] == '-a':	is_exec = 'autos'
 			if o[0] == '-p':
 				FL_fix_pos = True		### UPDATE wialon.last_pos
-				dbwialon = dbtools.dbtools(DBDS['wialon'])
+				dbWialon = dbtools.dbtools(DBDS['wialon'])
+				update_work_ts (sttmr)
 
-		dbcon = dbtools.dbtools(DBDS['contracts']) #	contracts
+		dbContr = dbtools.dbtools(DBDS['contracts']) #	contracts
+		if TS_in_work:
+			dbWorkt = dbtools.dbtools(DBDS['worktime']) #	worktime
+		#	init_work_ts (sttmr)
+		else:	dbWorkt = None
 		if is_exec == 'autos':	autos_inn ()
 		if is_exec == 'users':	users_inn ()
 
