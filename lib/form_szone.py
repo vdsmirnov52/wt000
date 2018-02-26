@@ -85,8 +85,9 @@ widget = """~div_right|
 	<dd>
 	<input type='checkbox' name='flag_001' /> площадь </br>
 	<input type='checkbox' name='flag_002' /> периметр </br>
+	<input type='checkbox' name='only_poligon' /> полигон </br>
 	<input type='checkbox' name='flag_004' checked /> границы и координаты центра </br>
-	<input type='checkbox' name='flag_008' checked /> точки </br>
+	<input type='checkbox' name='flag_008' checked /> точки и полигон </br>
 	<input type='checkbox' name='flag_016' checked /> базовые свойства </br>
 	</dd>
 	FORM

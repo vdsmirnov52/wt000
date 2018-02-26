@@ -8,8 +8,7 @@ import	json
 LIBRARY_DIR = r"/home/smirnov/Wialon/lib/"
 sys.path.insert(0, LIBRARY_DIR)
 
-rem = '''~div_left|<pre>
-[		/* массив, с данными о геозонах */
+rems = ['''<pre>[		/* массив, с данными о геозонах */
 	{
 		"n":<text>,	/* название  геозоны*/
 		"d":<text>,	/* описание */
@@ -49,10 +48,9 @@ rem = '''~div_left|<pre>
 	},
 	...
 ]
-</pre>'''
+</pre>''',
 
-rem = '''~div_left|<pre>
-ООО «АФГ Националь Нижний Новгород»
+	'''<pre> ООО «АФГ Националь Нижний Новгород»
 	1. Видеть расход ГСМ (ДУТ)
 	2. Видеть местоположение техники (БТ)
 	3. Видеть с каким прицепным оборудованием работает та или иная единица (радиометки на навесное оборудование)
@@ -61,15 +59,16 @@ rem = '''~div_left|<pre>
 	6. Интеграция в «1С» 
 	7. Возможно, ваше ведение еженедельных или ежемесячных отчётов. (если есть такие услуги)
 </pre>'''
-
+	]
 
 widget = """~div_right|
 	<div class="grey" style="background-color: #dde; width: 652px; padding: 4px; margin: 4px; top: 54px;">
 	<div class="box" style="background-color: #ccd;">
 	<table width="100%"><tr><td class='tit'>Геозоны - подробная информация</td>
 	<td align="right" id='dt_butt'>
+	<input class="butt" value="Приложеня" onclick="set_shadow('aplications');" type="button" title='Список риложенй' />
+	<input class="butt" value="Создать приложене" onclick="set_shadow('create_aplication');" type="button" title='Создать приложене' />
 	<input class="butt" value="Геозоны Wialon" onclick="set_shadow('list_wzones');" type="button" title='Список геозон Wialon' />
-	<input class="butt" value="Search Zone" onclick="set_shadow('search_szone');" type="button" title='Искать геозону' />
 	</td>
 	<td align=right><img onclick="set_shadow('form_agro');" title="Обновить" src="../img/reload3.png"></td>
 	</tr></table>
@@ -77,6 +76,7 @@ widget = """~div_right|
 	<dt><span class='tit'> itemId </span>	ID ресурса/учётной записи</dt>
 	<dd><input type='text' id='itemId' name='itemId' size=6 />
 	<span title='массив идентификаторов геозон'> &nbsp; col: <input id='zcol' type='text' name='zcol' size=44 /></span>
+	<input class="butt" value="Search Zone" onclick="set_shadow('search_szone');" type="button" title='Искать геозону' />
 	<dt><span class='tit'> flags </span> флаги, определяющие формат возвращаемого JSON </dt><dd> <input type='text' name='flags' size=6 value='-1' /></dd>
 	FORM
 	<div id="set_vals" style="min-height: 300px; max-height: 450px; overflow: auto;">set_vals</div>
@@ -85,7 +85,7 @@ widget = """~div_right|
 	</div>
 	"""
 
-def	dom (iddom, request):
+def	dom (iddom, request, dright = widget):
 	print "~widget|"
 	print "~%s|" % iddom
 	print "<table border=0><tr style='vertical-align: top;'><td id='td_left'></td><td id='td_right'></td></tr></table>"
@@ -93,10 +93,16 @@ def	dom (iddom, request):
 	print "~td_right|<div id='div_right' > ", request, " </div>"
 	print "~eval|$('#div_left').css({'height': (-233 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});"
 	print "~eval|$('#div_left').css({'width': (-700 + document.documentElement.clientWidth) +'px',  'overflow': 'auto'});"
-	print rem
-	print widget
+	print '~div_left|'
+	for r in rems:
+		print r
+	print dright	#widget
 
-serr =  lambda txt:     "<span class='bferr'> %s </span>" % txt
+
+sberr =	lambda val:	"<span class='bferr'> %s </span>" % str(val)
+sbinf =	lambda val:	"<span class='bfinf'> %s </span>" % str(val)
+
+#sberr =  lambda txt:     "<span class='bferr'> %s </span>" % txt
 
 def	search_szone(iddom, request):
 	import	twlp
@@ -104,8 +110,9 @@ def	search_szone(iddom, request):
 
 	print "~rlog|"
 	if not (request.has_key('itemId') and request['itemId'].isdigit()):
-		print serr ("Отсутствует или невернр задан 'itemId'.")
+		print sberr ("Отсутствует или невернр задан 'itemId'.")
 		return
+	print "#"*22, 'search_szone',  request
 	cols = []
 	if not (request.has_key('col') and request['col'].strip()[0].isdigit()):
 		for j in xrange(255):	cols.append(j)
@@ -117,9 +124,12 @@ def	search_szone(iddom, request):
 			if js and js.isdigit():	cols.append(int(js))
 
 	flags = 0
+	only_poligon = False
 	for k in request.keys():
 		if 'flag_' in k[:5] and request[k] == 'on':
 			flags += int (k[5:])
+		if k == 'only_poligon' and  request[k] == 'on':
+			only_poligon = True
 	if flags == 0:	flags = -1
 #	print '<hr />'
 	itemId = int(request['itemId'])
@@ -127,7 +137,7 @@ def	search_szone(iddom, request):
 #	print data
 	fres, sres = twlp.requesr(data)
 	if not fres:
-		print serr(sres), str(data)
+		print sberr(sres), str(data)
 		return
 	print "~%s|" % iddom
 #	print	sres
@@ -141,7 +151,8 @@ def	search_szone(iddom, request):
 		if i['t'] in ztype.keys():
 			print ztype[i['t']]
 		else:	print '###'
-		out_filds (i, flags)
+		if not only_poligon:
+			out_filds (i, flags)
 		if flags == -1:
 			print '<tr><td> </td><td colspan=3>'
 		if i.has_key('b') and i.has_key('p'):
@@ -208,7 +219,7 @@ def	list_wzones (iddom, request):
 	data = {'sid': request['wsid'], 'svc': 'core/search_items' , 'params': params}
 	fres, sres = twlp.requesr(data)
 	if not fres:
-		print serr(sres), str(data)
+		print sberr(sres), str(data)
 		return
 #	print sres['items'][0]	#.keys()
 	zlids = {}
@@ -271,6 +282,8 @@ def	ajax (request):
 	iddom = 'div_left'
 	if shstat == 'list_wzones':
 		list_wzones ('set_vals', request) 
+	elif shstat == 'create_aplication':
+		print 'create_aplication', request
 	elif shstat == 'search_szone':	### Геозоны - подробная информация
 		search_szone('div_left', request)
 	else:	print "~eval|alert ('form_agro: Unknown shstat: [%s]!');" % request ['shstat']

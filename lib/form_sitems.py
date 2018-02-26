@@ -98,15 +98,50 @@ def	select_propName(request):
 	print """~prop_view|<span class='tit'> Что смотрим: </span>"""
 	if request['itemsType'] == 'avl_resource':
 		print """<dd>
-		<input type='checkbox' name='fild_prp' /> Произвольные свойства 0x00000002 </br>
-		<input type='checkbox' name='fild_filds' /> Произвольные поля 0x00000008 </br>
-		<input type='checkbox' name='fild_GUID' /> GUID 0x00000040  </br>
-		<input type='checkbox' name='fild_aflds' /> Административные поля 0x00000080 </br>
-		<input type='checkbox' name='fild_zl' /> Геозоны 0x00001000 </br>
-		<input type='checkbox' name='fild_zg' /> Группы геозон 0x00100000 </br>
+		<input type='checkbox' name='fild_prp' /> Произвольные свойства 0x00000002 <br />
+		<input type='checkbox' name='fild_filds' /> Произвольные поля 0x00000008 <br />
+		<input type='checkbox' name='fild_aflds' /> Административные поля 0x00000080 <br />
+		<input type='checkbox' name='fild_zl' /> Геозоны 0x00001000 <br />
+		<input type='checkbox' name='fild_zg' /> Группы геозон 0x00100000 <br />
 		<!--
-		<input type='checkbox' name='fild_' />  </br>
+		<input type='checkbox' name='fild_GUID' /> GUID 0x00000040  <br />
+		<input type='checkbox' name='fild_' />  <br />
 		-->
+		</dd>"""
+	elif request['itemsType'] == 'avl_unit':
+		print """<dd>
+		<input type='checkbox' name='fild_prp' /> Произвольные свойства 0x00000002 <br />
+		<input type='checkbox' name='fild_filds' /> Произвольные поля 0x00000008 <br />
+		<input type='checkbox' name='fild_aflds' /> Административные поля 0x00000080 <br />
+		<input type='checkbox' name='fild_sens' /> Датчики 0x00001000 <br />
+		<input type='checkbox' name='fild_cmds' /> Доступные в данный момент команды 0x00000200 <br />
+		<b>Дополнительные свойства 0x00000100 </b><br />
+		<input type='checkbox' name='fild_uid' /> ID оборудования;
+		<input type='checkbox' name='fild_hw' /> тип оборудования;
+		<input type='checkbox' name='fild_ph' /> телефонн;
+		<input type='checkbox' name='fild_ph2' /> телефонн 2;
+		<input type='checkbox' name='fild_psw' /> пароль
+		<br>
+		<b>Последнее местоположение и сообщение 0x00000400 </b ><br />
+		<input type='checkbox' name='fild_pos' /> местоположение
+		<input type='checkbox' name='fild_lmsg' /> сообщение
+		<br />
+		<!--
+		<input type='checkbox' name='fild_ugi' /> Изображение объекта 0x00000010 <br />
+		<input type='checkbox' name='fild_' />  <br />
+		-->
+		</dd>"""
+	elif request['itemsType'] == 'user':
+		print """<dd>
+		<input type='checkbox' name='fild_prp' /> Произвольные свойства 0x00000002 <br />
+		<input type='checkbox' name='fild_autocomplete' /> autoComplete 
+		<input type='checkbox' name='fild_monugr' /> monUGr  
+		<input type='checkbox' name='fild_monuv' /> monUV
+		<input type='checkbox' name='fild_monu' /> monU  <br />
+		<input type='checkbox' name='fild_filds' /> Произвольные поля 0x00000008 <br />
+		<input type='checkbox' name='fild_aflds' /> Административные поля 0x00000080 <br />
+		<input type='checkbox' name='fild_' />  <br />
+		<input type='checkbox' name='fild_' />  <br />
 		</dd>"""
 
 def	dom (iddom, request):
@@ -140,26 +175,36 @@ def	dom (iddom, request):
 	print "~eval|$('#div_sitems').css({'left': (-720 + document.documentElement.clientWidth) +'px'});"
 	print "~eval|$('#div_sitems').css({'height': (-233 + document.documentElement.clientHeight) +'px',  'overflow': 'auto'});"
 
-import	wtools, twlp
+import	wtools, twlp, get
 
-serr =	lambda txt:	"<span class='bferr'> %s </span>" % txt
+sberr =	lambda val:	"<span class='bferr'> %s </span>" % str(val)
+sbinf =	lambda val:	"<span class='bfinf'> %s </span>" % str(val)
 
 def	prn_fild (js, view_filds):
 	""" Вернуть значение поля если есть	"""
 	sres = []
 	for fn in view_filds:
 		if js.has_key(fn) and js[fn]:
-			if type(js[fn]) == dict:
-				for k in js[fn].keys():
-					print "<b> %s %s </b>" % (fn, k)
-					if js[fn][k].has_key('n') and js[fn][k]['n']:
-						print " '%s' " % js[fn][k]['n'].encode('UTF-8')
-						del (js[fn][k]['n'])
-					if js[fn][k].has_key('d') and js[fn][k]['d']:
-						print " '%s' " % js[fn][k]['d'].encode('UTF-8')
-						del (js[fn][k]['d'])
-					print " %s <br />" % str (js[fn][k])
+			if 'pos' == fn:
+				print get.ppos(js.get(fn))
+			elif fn == 'lmsg':	print "<b> %s </b>" % fn, js.get(fn)
+			elif fn == 'prp':	print "<b> %s </b>" % fn, js.get(fn)
+			elif type(js[fn]) == dict:
+				if fn == 'sens':
+					print "<b> %s </b>" % fn, js[fn].keys()	#.encode('UTF-8')
+				else:
+					for k in js[fn].keys():
+						print "<b> %s %s </b>" % (fn, str(k))
+						if js[fn][k].has_key('n') and js[fn][k]['n']:
+							print " '%s' " % js[fn][k]['n'].encode('UTF-8')
+							del (js[fn][k]['n'])
+						if js[fn][k].has_key('d') and js[fn][k]['d']:
+							print " '%s' " % js[fn][k]['d'].encode('UTF-8')
+							del (js[fn][k]['d'])
+						print " %s <br />" % str (js[fn][k])
+				
 			else:	print "<b> %s </b> %s <br />" % (fn, str (js[fn]))
+		#	print "<br />"
 
 def	search_items (request):
 	""" Выполнить запрос "Поиск элементов"	"""
@@ -181,14 +226,29 @@ def	search_items (request):
 		data = {'sid': request['wsid'], 'svc': 'core/search_items' , 'params': params}
 		fres, sres = twlp.requesr(data)
 		if fres:
-			print "~dbody|", params
-			print 'totalItemsCount:', sres['totalItemsCount'], '<hr />'
+			print "~log|", sbinf(fres), '</span>', params
+			print '<br />totalItemsCount:', sbinf(sres['totalItemsCount'])	#, '<hr />'
+			print "~dbody|"
 			print "<table>"
 			for i in sres['items']:
-				print "<tr><td>", i['id'], "</td><td>", i['nm'].encode('UTF-8'), i['cls'], "</td></tr>"
+				if i.has_key('pos') and i['pos']:
+					print "<tr><td>", i['id'], "</td><td>", sbinf (i['nm'].encode('UTF-8')), i['cls'], '</td><td>', get.ppos(i.get('pos')), "</td></tr>"
+				else:	print "<tr><td>", i['id'], "</td><td>", sbinf (i['nm'].encode('UTF-8')), i['cls'], '</td><td>', "</td></tr>"
 				if not view_filds:	continue
-				print "<tr><td> </td><td>"
+				
+				if i.has_key('prp'):
+					if 'monugr' in view_filds and i['prp'].has_key('monugr') and len(i['prp']['monugr']) > 2:
+						print "<tr><td> </td><td>", sbinf('monUGr'), "</td><td>", i['prp']['monugr'], "</td></tr>"
+					if 'monuv' in view_filds and i['prp'].has_key('monuv') and len(i['prp']['monuv']) > 2:
+						print "<tr><td> </td><td>", sbinf('monUV'), "</td><td>", i['prp']['monuv'], "</td></tr>"
+					if 'monu' in view_filds and i['prp'].has_key('monu') and len(i['prp']['monu']) > 2:
+						print "<tr><td> </td><td>", sbinf('monU'), "</td><td>", i['prp']['monu'], "</td></tr>"
+					if 'autocomplete' in view_filds and i['prp'].has_key('autocomplete'):
+						print "<tr><td> </td><td>", sbinf('autoCompltte'), "</td><td>", i['prp']['autocomplete'].encode('UTF-8'), "</td></tr>"
+
+				print "<tr><td> </td><td colspan=2>"
 				sjs = prn_fild (i, view_filds)
+				if sjs:	print sjs
 				print "</td></tr>"
 				"""
 			#	print spec
@@ -225,8 +285,10 @@ def	search_items (request):
 			#	print '<br />'
 			print "</table>"
 			print	'#'*22
-		else:	print serr (sres)
-	except:	print serr (wtools.sexcept ('search_items"'))
+		else:
+			print "~log|", sberr (sres), params
+			print "~eval| set_shadow('connect');"
+	except:	print sberr (wtools.sexcept ('search_items"'))
 
 def	ajax (request):
 	shstat = request['shstat']

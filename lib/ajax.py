@@ -388,6 +388,14 @@ def	main (SCRIPT_NAME, request, referer):
 					print "~eval|$('#flabel').html('Агосервис');"
 					form_agro.dom('dbody', request)
 				else:	form_agro.ajax(request)
+				'''
+			elif '_aplication' in request['fstat']:		### == 'create_aplication':
+				import	aplications
+				if 'create' in request['fstat']:
+					print "~eval|$('#flabel').html('%s');" % 'Создать приложение'
+					aplications.create('create', request)
+				else:	aplications.ajax(request)
+				'''
 
 			elif request['fstat'] == 'form_sitems':		### Поиск объектов
 				import	form_sitems		
