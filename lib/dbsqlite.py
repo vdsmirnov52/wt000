@@ -64,7 +64,7 @@ class dbsqlite:
 		finally:
 			self.conn.commit()
 
-	def	close():
+	def	close(self):
 		self.conn.close()
 
 	def	get_table (self, tname, swhere = None, cols = None):
