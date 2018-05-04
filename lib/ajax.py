@@ -354,7 +354,7 @@ def	main (SCRIPT_NAME, request, referer):
 #		else:
 		shstat = request['shstat']
 		print	"~shadow|shstat", shstat
-		if shstat in ['login', 'connect', 'exit', 'update_token']:	### Global Statuses 
+		if shstat in ['login', 'connect', 'exit', 'update_token', 'btest']:	### Global Statuses 
 			print "~log|"
 			if shstat == 'connect':
 				import	twlp
@@ -371,6 +371,10 @@ def	main (SCRIPT_NAME, request, referer):
 						print "~dbody|<pre>", get.puser_prp (wsess), "</pre>"
 				#	print 'wsess:', wsess
 				#	out_json(wsess['user'], iddom='dbody')
+			elif shstat == 'btest':
+				print "<span class='bfinf'> %s </span>" % shstat, request
+				import get
+				print "~dbody|<pre>", get.get_factory (request.get('wsid'), 357), "</pre>"
 			elif shstat == 'update_token':		### Читать Tokens из 'sys.ini'.
 				import	update_token
 				update_token.update_token()

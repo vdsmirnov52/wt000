@@ -102,6 +102,7 @@ def	out_head (title = None):
 	print	"""<td align=right><input type='button' class='butt' value='Connect' onclick="set_shadow('connect');" title='Установить (обновить) соединение' />
 		<input type='button' class='butt' value='Exit' onclick="set_shadow('exit');" title='Разорвать соединение' />
 		<input type='button' class='butt' value='Tokens' onclick="set_shadow('update_token');" title="Читать Tokens из 'sys.ini'." />
+		<input type='button' class='butt' value='TsT' onclick="set_shadow('btest');" title="btest" />
 		</td>"""
 	print	"""<td align=right><img onclick="document.myForm.submit();" title="Обновить" src="../img/reload3.png"></td>"""
 	print	"</tr></table></div>"
@@ -270,14 +271,16 @@ def	main (request, conf):
 		'''
 		'''
 	#	print 'REMOTE_ADDR', os.environ['REMOTE_ADDR']
-		if os.environ['REMOTE_ADDR'] in ['10.10.2.40']:
+		if os.environ['REMOTE_ADDR'] in ['10.10.2.40', '37.147.195.151']:
 			out_head(CONFIG.get('System', 'name'))
 			print button_tools
 			print "<div id='dbody' class='hidd'>"
+		#	print	'<iframe src="http://212.193.103.21/tmp/mmap.html" width="800" height="700"></iframe>'
 			print	'<iframe src=" http://wialon.rnc52.ru/locator/index.html?t=1b63c946cfcf86dcce016b989f18f16fD6D553B79EDEDEFB89EDE97EECFB9724E2B64AE1&map_type=2&zoom=17&lang=ru" width="800" height="700"></iframe>'
 		#	print	'<iframe src=" http://wialon.rnc52.ru/locator/index.html?u=Агрофирма РУСЬ&zoom=17&lang=ru" width="800" height="700"></iframe>'
 			print "</div><!-- dbody       -->"
 		else:
+			print 'REMOTE_ADDR', os.environ['REMOTE_ADDR']
 			print '<h3><img onclick="document.myForm.submit();" title="Обновить" src="../img/reload3.png"> Wialon demo</h3>'
 			print	'<iframe src=" http://wialon.rnc52.ru/locator/index.html?t=1d5a4a6ab2bde440204e6bd1d53b3af841235B51D73C0B07786DA3DC363D2008712C05B5&zoom=17&lang=ru" width="1200" height="700"></iframe>'
 		#	print	'<iframe src=" http://wialon.rnc52.ru/locator/index.html?t=1b63c946cfcf86dcce016b989f18f16fD6D553B79EDEDEFB89EDE97EECFB9724E2B64AE1&zoom=17&lang=ru" width="800" height="700"></iframe>'

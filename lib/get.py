@@ -119,17 +119,20 @@ svss = {
 	'token_list':	'token/list',
 	}
 
-def	get_hw_types(sid):
+def	get_hw_types(sid, dbid = None):
 	# type – значения: auto, tracker, mobile, soft 
 	# "filterType":<text>,"filterValue":[<text>|<uint>], "includeType":<bool>}
 	params = { "filterType":"type", "filterValue":["auto"], "includeType": True }
-	for vtype in ["auto", "mobile", "soft"]:	# "tracker"]:
+	for vtype in ["auto", "mobile", "soft"]:	#, "tracker"]:
 		params["filterValue"] = [vtype]
 		print ">>><%s>" % json.dumps(params)
 		res = request (sid, svss['get_hw_types'], json.dumps(params)[1:-1])
 		print "filterValue:", params["filterValue"]
 		for r in res:
-			print "\t%4d\t%s" % (r['id'], r['name'])
+			if dbid:
+				insert_into (dbid, 'hw_types', {'code': r['id'], 'class': vtype, 'tname': r['name']})
+			else:
+				print "\t%4d\t%s" % (r['id'], r['name'])
 #		ppp(res)
 
 
@@ -201,6 +204,94 @@ def	puser_prp (sess):
 					print monugr[g]
 				else:	ppp(res, g)
 
+auto_keys =	['rtd', 'cfl', 'uid', 'pfldsmax', 'uacl', 'cml_max', 'pos', 'bact', 'gd', 'prp', 'prms', 'ph2', 'ct', 'rfc', 'uid2', 'pflds', 'sens_max', 'sens', 'ph', 
+		'lmsg', 'cls', 'afldsmax', 'flds', 'hw', 'cmds', 'aflds', 'cml', 'cnkb', 'psw', 'ugi', 'cnm', 'crt', 'uri', 'm', 'si', 'fldsmax', 'simax', 'cneh'],
+prps = {
+	'auto':	['solid_colors', 'track_speed', 'idrive', 'track_solid', 'label_color'],
+	'user': ['show_log', 'fpnl', 'umap', 'ursstp', 'vsplit', 'used_hw',
+	#	'city', 'radd', 'email', 
+		'tz', 'dst', 'tracks_player_show_sensors', 'monuei', 'monugr', 'muf', 'monugv', 'tracks_player_show_params', 'us_addr_ordr', 
+		'lastmsgl', 'mtya', 'us_addr_fmt', 'hpnl', 'usuei', 'mu_location', 'mu_loc_mode', 'mu_sens', 'cfmt', 'mf_use_sensors', 'monuv', 
+		'hbacit', 'evt_flags', 'znsvlist', 'minimap_zoom_level', 'access_templates', 'language', 'monuexpg', 
+	#	'umsp', 'autocomplete', 'mont', 'mon', 
+		'mu_fast_report_tmpl', 'route_provider', 'mu_fast_track_ival']
+	}
+
+def	get_factory (sid, usrid, item_type = 'user', parid = None):
+	if not (sid or usrid):	return
+
+	hw_list = []
+	columns = {}
+	flags = -1
+	res = request (sid, 'core/search_item', '"id":%d,"flags":%d' % (usrid, flags))
+	if res.has_key('item'):
+		ir = res['item']
+	#	print  ir.keys()
+		snm = res['item']['nm'].encode('UTF-8')
+		wid = res['item']['id']
+		print "'%s'\tid: %d\t" % (snm, res['item']['id']) ,
+		if item_type == 'auto':
+			columns['idts'] = wid
+			columns['idus'] = parid
+			columns['gosnum'] = snm 
+			columns['idd'] = ir.get('uid')
+			columns['devtype'] = ir.get('hw')
+		#	columns[''] = 
+			pos = ir.get('pos')
+			idd = ir.get('uid')	#.encode('UTF-8')
+			devtype =  ir.get('hw')
+		#	print ir['prp'].keys()
+			if pos:
+				print "\t%s %s %s %s" % (pos['x'], pos['y'], pos['z'], time.strftime("%Y-%m-%d %T", time.localtime(pos['t'])))
+			insert_into (DBID, 'wtsdesc', columns)	#cols, vals)
+		if item_type != 'user':			return
+		prp_ignore_keys = prps['user']
+		print
+		prp = ir.get('prp')
+		if prp:
+			columns['idus'] = wid 
+			columns['uname'] = snm 
+		#	columns[''] = 
+		#	print '	prp:', prp.keys()
+			for k in prp.keys():
+				if k in prp_ignore_keys:	continue
+				v =  prp.get(k)
+				if v:
+					print '\t%s\t' %k, prp.get(k)
+				if k == 'email' and v:	columns['email'] = v
+				if k == 'monu'and len(v) > 4:
+					autos = v[2:-2].split('","')
+					for sa in autos:
+						if sa and not sa.isdigit():	continue
+						print int(sa), '>\t', 
+						get_factory (sid, int(sa), 'auto', wid)
+					sv = v.encode('UTF-8')
+					columns['monu'] = sv.replace('"', '')
+			insert_into (DBID, 'wuser', columns)
+	#	print 'hm	', ir.get('hm')
+	#	print 'mapps	', ir.get('mapps')
+	else:	ppp(res, usrid)
+
+import	dbtools
+#	INSERT INTO wusert (wid, uname, email, muou) VALUES (357, 'Агрофирма РУСЬ', 'siluyan71@mail.ru', '[359,360,361,362,365,367,368,369,370]');
+
+def	insert_into (dbid, tab, columns):
+	cols = []
+	vals = []
+	for k in columns:
+	#	print k, columns[k], type(columns[k])
+		if not columns[k]:	continue
+		cols.append(k)
+		if type(columns[k]) == unicode:
+			vals.append("%s" % columns[k].encode('UTF-8'))
+		elif type(columns[k]) == int:
+			vals.append("%d" % columns[k])
+		else:	vals.append("%s" % str(columns[k]))
+	query = "INSERT INTO %s (%s) VALUES('%s')" % (tab, ', '.join(cols), "', '".join(vals))
+	print query
+#	return
+	if dbid:	dbid.qexecute(query)
+
 if __name__ == "__main__":
 	usr2token = init_conf ()
 	print ''
@@ -210,8 +301,14 @@ if __name__ == "__main__":
 #	puser_prp (sess)
 
 	sid = sess['eid']
-	get_autos (sid)
-#	get_hw_types(sid)
+	DBID = dbtools.dbtools('host=127.0.0.1 dbname=test port=5432 user=smirnov')
+	for usrid in [357, 373, 436]:	print	get_factory (sid, usrid)
+	'''
+	get_hw_types(sid, DBID)
+#	get_factory (sid, 357)
+	'''
+#	for usrid in [357, 373, 436, 166, 71, 617, 453]:	print	get_factory (sid, usrid)
+#	get_autos (sid)
 #	get_user (sid, -1)
 #	get_zones (sid)
 

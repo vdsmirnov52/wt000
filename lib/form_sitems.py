@@ -95,7 +95,12 @@ def	select_propName(request):
 	for v in dict_subitemsType[request['itemsType']]:
 		print "<option value='%s'> %s  </option>" % (v, v)
 	print """</select>"""
-	print """~prop_view|<span class='tit'> Что смотрим: </span>"""
+	print """~prop_view|<p><span class='tit'> Фильтры: </span>"""
+	print """<dd>
+		<input type='text' name='item_name' /> Наименование объекта <br />
+		<input type='text' name='fild_name' /> Наименование поля <br />
+		</dd>"""
+	print """<p><span class='tit'> Что смотрим: </span>"""
 	if request['itemsType'] == 'avl_resource':
 		print """<dd>
 		<input type='checkbox' name='fild_prp' /> Произвольные свойства 0x00000002 <br />
@@ -140,8 +145,10 @@ def	select_propName(request):
 		<input type='checkbox' name='fild_monu' /> monU  <br />
 		<input type='checkbox' name='fild_filds' /> Произвольные поля 0x00000008 <br />
 		<input type='checkbox' name='fild_aflds' /> Административные поля 0x00000080 <br />
+		<!--
 		<input type='checkbox' name='fild_' />  <br />
 		<input type='checkbox' name='fild_' />  <br />
+		-->
 		</dd>"""
 
 def	dom (iddom, request):
@@ -206,6 +213,14 @@ def	prn_fild (js, view_filds):
 			else:	print "<b> %s </b> %s <br />" % (fn, str (js[fn]))
 		#	print "<br />"
 
+# user		['mappsmax', 'ld', 'uacl', 'nm', 'crt', 'afldsmax', 'usnf', 'flds', 'm', 'aflds', 'bact', 'gd', 'mapps', 'prp', 'fldsmax', 'hm', 'ct', 'fl', 'id', 'cls']
+# avl_...
+# unit		['rtd', 'cfl', 'uid', 'pfldsmax', 'uacl', 'cml_max', 'pos', 'bact', 'gd', 'prp', 'prms', 'ph2', 'id', 'ct', 'rfc', 'uid2', 'nm', 'pflds', 'sens_max', 'sens', 'ph', 'lmsg', 'cls', 'afldsmax', 'flds', 'hw', 'cmds', 'aflds', 'cml', 'cnkb', 'psw', 'ugi', 'cnm', 'crt', 'uri', 'm', 'si', 'fldsmax', 'simax', 'cneh']
+# unit_group	['ugi', 'uacl', 'nm', 'crt', 'afldsmax', 'flds', 'uri', 'm', 'aflds', 'bact', 'gd', '', 'prp', 'fldsmax', 'ct', 'id', 'cls']
+# resource	['zl', 'poimax', 'drvrsgr', 'poi', 'flds', 'ordersmax', 'bact', 'gd', 'prp', 'repmax', 'unfmax', 'orders', 'ct', 'nm', 'rep', 'drvrun', 'drvrsgrmax', 'id', 'trlrs', 'trlrun', 'cls', 'drvrsmax', 'zg', 'unf', 'afldsmax', 'trlrsmax', 'trlrsgrmax', 'trlrsgr', 'aflds', 'drvrs', 'zlmax', 'uacl', 'crt', 'm', 'ujbmax', 'zgmax', 'fldsmax', 'ujb']
+# route		['rpts', 'nm', 'crt', 'rs', 'rcfg', 'uacl', 'rr', 'm', 'bact', 'gd', 'prp', 'ct', 'id', 'cls']
+# retranslator	['rtrc', 'nm', 'crt', 'uacl', 'rtr', 'm', 'bact', 'gd', 'prp', 'rtro', 'ct', 'rtrst', 'id', 'cls']
+
 def	search_items (request):
 	""" Выполнить запрос "Поиск элементов"	"""
 	params = {'force':1, 'flags':1025, 'from':0, 'to':0}
@@ -215,6 +230,9 @@ def	search_items (request):
 	for k in params.keys():
 		if request.has_key(k) and request[k]:	params[k] = int(request[k])
 	view_filds = []
+	filter_iname = request.get('item_name')
+	if filter_iname:	filter_iname = filter_iname.strip()
+	filter_ikeys = request.get('fild_name')
 	for k in request.keys():
 		if 'fild_' in k[:5] and request[k] == 'on':
 			view_filds.append(k[5:])
@@ -228,14 +246,25 @@ def	search_items (request):
 		if fres:
 			print "~log|", sbinf(fres), '</span>', params
 			print '<br />totalItemsCount:', sbinf(sres['totalItemsCount'])	#, '<hr />'
+			print '<br />', filter_iname, filter_ikeys
 			print "~dbody|"
 			print "<table>"
 			for i in sres['items']:
+				item_name = i['nm'].encode('UTF-8')
+				cls = ''
+			#	cls = len(i.keys())	### 20
+			#	cls = i['prp']		### {u'idrive': u'1;1', ...}
+			#	cls = i['prms']		### Дотчики
+			#	cls = i['rfc']		### Топливо данные для расчета
+				cls = i.get('cnm')
+			#	'crt', 'uri', 'prp', 'prms', 'ct', 'rfc', 'uid2'
+			#	cls = i.get('uri')	### url -> *.ong
+				if filter_iname and filter_iname not in item_name:	continue
 				if i.has_key('pos') and i['pos']:
-					print "<tr><td>", i['id'], "</td><td>", sbinf (i['nm'].encode('UTF-8')), i['cls'], '</td><td>', get.ppos(i.get('pos')), "</td></tr>"
-				else:	print "<tr><td>", i['id'], "</td><td>", sbinf (i['nm'].encode('UTF-8')), i['cls'], '</td><td>', "</td></tr>"
+					print "<tr><td>", i['id'], "</td><td>", sbinf (item_name), cls, '</td><td>', get.ppos(i.get('pos')), "</td></tr>"
+				else:	print "<tr><td>", i['id'], "</td><td>", sbinf (item_name), cls, '</td><td>', "</td></tr>"
+			#	print i.keys()
 				if not view_filds:	continue
-				
 				if i.has_key('prp'):
 					if 'monugr' in view_filds and i['prp'].has_key('monugr') and len(i['prp']['monugr']) > 2:
 						print "<tr><td> </td><td>", sbinf('monUGr'), "</td><td>", i['prp']['monugr'], "</td></tr>"
