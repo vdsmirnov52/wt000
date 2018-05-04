@@ -26,7 +26,7 @@ def	out_pos (pos):
 	sout = "\t[%s %3.9f, %3.9f, %d]" % (time.strftime("%Y-%m-%d %T", time.localtime(pos['t'])), pos['x'], pos['y'], pos['z'])
 	return	sout
 
-def	get_pflds (flags):
+def	get_allflds (flags):
 	pflds = {}
 	for k in flags.keys():
 		pflds[flags[k]['n']] = flags[k]['v']
@@ -81,7 +81,8 @@ def	check_fflags (fl_name, flags, sid, itemId):
 			time.sleep(0.1)
 	return	inn	########################
 
-def	check_inn (sid, itemId, dfres, item):
+def	check_inn (sid, itemId, dfres, item, iinn, gosnum):
+	""" проверка наличия ИНН в БД contracts	"""
 	flds = dfres.keys()
 	if len(flds) > 1:
 		print "\tDoule INN", dfres
@@ -90,8 +91,7 @@ def	check_inn (sid, itemId, dfres, item):
 	add_atts = 0
 	fld = flds[0]
 	k, dfinn = dfres[fld]
-	query = "SELECT t.*, a.autos FROM transports t LEFT JOIN atts a ON a.autos = t.id_ts WHERE gosnum = '%s';" % item['nm'].encode('UTF-8')
-#	query = "SELECT * FROM transports WHERE gosnum = '%s'" % item['nm'].encode('UTF-8') 
+	query = "SELECT t.*, a.autos FROM transports t LEFT JOIN atts a ON a.autos = t.id_ts WHERE gosnum = '%s';" % gosnum
 	dts = dbContr.get_dict(query)
 	if dts:
 		if dts['autos']:
@@ -106,9 +106,10 @@ def	check_inn (sid, itemId, dfres, item):
 		return
 
 	cols = ['gosnum', 'id_org', 'bm_ssys', 'region', 'bm_status', 'device_id']
-	vals = ["'%s'" % item['nm'].encode('UTF-8'), "%d" % dorg['id_org'], "%d" % dorg['bm_ssys'], "%d" % dorg['region'], '12', "-%d" % itemId]
+#	vals = ["'%s'" % item['nm'].encode('UTF-8'), "%d" % dorg['id_org'], "%d" % dorg['bm_ssys'], "%d" % dorg['region'], '12', "-%d" % itemId]
+	vals = ["'%s'" % gosnum, "%d" % dorg['id_org'], "%d" % dorg['bm_ssys'], "%d" % dorg['region'], '12', "-%d" % itemId]
 #	print "\t", dorg
-	pflds = get_pflds (item['pflds'])
+	pflds = get_allflds (item['pflds'])
 	for k in pflds.keys():
 	#	print "\t", k, pflds[k], type (pflds[k])
 		if not pflds[k]:	continue
@@ -216,23 +217,41 @@ def	search_inn (flname, flags):
 	return	sinn
 
 def	set_inn_by_autos (sid, itemIds, inn):
-	flags = 1 +8 +128
+	""" Прописать (проверить) ИНН в записи автомобиля	"""
+	flags = 1 +8 +128 +8388608
 	for iid in itemIds:
 		data = {'sid': sid, 'svc': 'core/search_item', 'params':{'id': int(iid), 'flags': flags}}
 		b, sres = twlp.requesr(data, host = HOST)
 		if not b:	continue
 		r = sres['item']
+		'''
+		for k in r.keys():
+			if r[k]:	print '\t',k, r[k],
+		print
+		'''
 	#	print b, sres.keys(), sres['flags']
 		jinn = search_inn ('flds', r['flds'])
+	#	print 'jinn', jinn, type(jinn)
 		if jinn and jinn == inn:		continue
 
-		time.sleep(0.1)
+		time.sleep(0.2)
+		gosnum = sres['item']['nm'].encode('UTF-8')	
+		pflds = sres['item'].get('pflds')
+		if pflds:
+		#	print pflds
+			reg_plate = get_pflds (sres['item']['pflds'], 'registration_plate')
+			if reg_plate == None and gosnum != reg_plate:
+				print sres['item']['id'], '\t \x1b[1;33m NM: %s != %s reg_plate \x1b[0m' % (gosnum, reg_plate)
+			else:	print sres['item']['id'], '\t \x1b[1;33m NM: %s reg_plate %s \x1b[0m' % (gosnum, reg_plate)
+		else:	print sres['item']['id'], '\t NM: %s' % gosnum
 		k = 1
 		if r.has_key('aflds'):
 			k += len(r['aflds'])
 			jinn = search_inn ('aflds', r['aflds'])
 			if jinn and jinn == inn:	continue
-		print '\t', iid, sres['item']['nm'], inn, jinn
+	
+	
+		print '\t', iid, gosnum, inn, jinn
 		data = {'sid': sid, 'svc': 'item/update_admin_field', 'params':{"itemId": int(iid), 'id': 0, "n": 'INN', "v": inn.encode('UTF-8'), "callMode":"create"}}
 		b, upres = twlp.requesr (data, host = HOST)
 		if not b:
@@ -259,8 +278,14 @@ def	users_inn ():
 	if not b:
 		print b, sres
 		return
-#	print 'ZZZ', sid, b
+
 	for r in sres['items']:
+		'''
+		if 'ДТ-НН' in r['nm'].encode('UTF-8'):	# 720 ДТ-НН СпецДорСтрой 718      5258067224
+			print r['nm'], r.keys()
+			if r['flds']:	print r['flds']
+			if r['aflds']:	print r['aflds']
+		'''
 		sinn = search_inn ('flds', r['flds'])
 		if sinn:
 			print r['id'], r['nm'], r['crt'], '\t', sinn
@@ -276,7 +301,7 @@ def	users_inn ():
 	print "="*33, "users_inn"	########################
 
 def	autos_inn ():
-	""" Поиск ТС имеющих ИНН	"""
+	""" Поиск ТС имеющих ИНН. Если TS_in_work == True обновление atts.last_date & atts.bm_wtime	"""
 	print	'Поиск ТС имеющих ИНН\n\tUSER:', USER, '\tHOST:', HOST, '\tTS_in_work:', TS_in_work
 	if not usr2token.has_key(USER):
 		print	"Unknown user Wialon '%s'." % USER
@@ -296,20 +321,23 @@ def	autos_inn ():
 		print b, sres
 		return
 	j = 0
+	iinn = 0
 	ts_list = []
 	for item in sres['items']:
 		chres = {}
 		itemId = item['id']
 		if TS_in_work and not item['pos']:	continue
-#		if not item['pos']:			continue
+
+		gosnum = item['nm'].encode('UTF-8').strip()
+		reg_plate = get_pflds (item['pflds'], 'registration_plate')
 		if not ((item.has_key('aflds') and item['aflds']) or item['flds']):
 			if FL_fix_pos and item.has_key('pos') and item['pos']:
-				fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'])
+			#	fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'])
+				fix_pos(itemId, item['uid'].encode('UTF-8'), gosnum, item['pos'])
 			continue
 		j += 1
 #		if j > 11:	break
 		if not (item['aflds'] or item['flds']):	continue
-	#	print item['nm'].encode('UTF-8'), out_pos(item['pos'])
 		if item.has_key('flds') and item['flds']:
 			fres = check_fflags ('flds', item['flds'], sid, itemId)
 			if fres:	chres ["fres"] = fres
@@ -318,17 +346,43 @@ def	autos_inn ():
 			if fres:	chres ["afres"] = fres
 
 		if FL_fix_pos and item.has_key('pos') and item['pos']:
-			fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'], fres)
+		#	fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'], fres)
+			fix_pos(itemId, item['uid'].encode('UTF-8'), gosnum, item['pos'], fres)
 
 		if chres:
-		#	print item['id'], '\t', item['nm'].encode('UTF-8'), out_pos(item['pos'])
-			if TS_in_work:
-				ts_list.append((item['nm'].encode('UTF-8'), item['pos']['t']))
+			vals = chres.get('fres')
+			if not vals:	vals = chres.get('afres')
+		#	print vals, type(vals)
+			for iv in vals:
+				if type(iv) != dict:	continue
+				if iv.has_key('n') and iv['v'] and iv['v'].isdigit():
+					iinn = int(iv['v'])
+					break
+		
+			if iinn == 5258067224:	# 720 ДТ-НН СпецДорСтрой 718      5258067224
+				gosnum = reg_plate
+			elif gosnum != reg_plate:
+				print item['id'], '\t \x1b[1;33m NM: %s != %s reg_plate \x1b[0m' % (gosnum, reg_plate), out_pos(item.get('pos')), iinn
 			else:
-				check_inn (sid, itemId, chres, item)
+				print item['id'], '\t', gosnum, out_pos(item.get('pos')), iinn	#, chres
+			'''
+			check_inn (sid, itemId, chres, item, iinn, gosnum)
+			'''
+			if TS_in_work:		# бновление atts.last_date & atts.bm_wtime
+				if iinn == 5258067224:	# 720 ДТ-НН СпецДорСтрой 718      5258067224
+					jss = gosnum.split(' ')
+					gosnum = jss[-1]
+			#	ts_list.append((item['nm'].encode('UTF-8'), item['pos']['t']))
+				ts_list.append((gosnum, item['pos']['t']))
+			else:
+				check_inn (sid, itemId, chres, item, iinn, gosnum)	# проверка наличия ИНН в БД contracts
 		continue
 	if ts_list:	set_last_date (ts_list)
 	print "="*33, "autos_inn"	########################
+
+def	get_pflds (pflds, key):
+	for k in pflds.keys():
+		if pflds[k]['n'] == key:	return pflds[k]['v'].encode('UTF-8')
 
 def	update_work_ts (sttmr):
 	tm_mon, tm_mday = time.localtime(sttmr)[1:3]
