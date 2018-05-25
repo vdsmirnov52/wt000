@@ -533,10 +533,210 @@ def	outhelp():
 	if CONFIG:	print "CONFIG[usr2token]:\n\t", usr2token
 	sys.exit()
 
+HOST =	'wialon.rnc52.ru'
+
+#	"crt":<uint>,	/* ID создателя */
+#	"bact":<uint>	/* ID учетной записи */
+#	"u":[<long>],	/* массив идентификаторов объектов, входящих в группу */
+
+def	create_autos (gid = 364, flags = -1):
+	""" Создать описатели Транспорта принадлнжащих группе gid	"""
+	sid = loging()
+	data = {'sid': sid, 'svc': 'core/search_item', 'params':{'id': gid, 'flags': flags}}
+	b, sres = twlp.requesr(data, host = HOST)
+	if not b:	return
+	print 'create_autos\t', '#'*33
+	item = sres['item']
+#	print '\tID создателя:', item.get('crt'), '\tID учетной записи:', item.get('bact'), '#'*33, item.get('nm')
+#	if item.has_key('prp'):	twlp.ppp(item['prp'])
+#	twlp.ppp(item)
+	it_u = item.get('u')
+	if not it_u:
+		print 'Нет ТС!\t', '#'*33
+		return
+
+	import	dbtools
+	db_agro = 'host=212.193.103.20 dbname=agro_test port=5432 user=smirnov'
+	dbi = dbtools.dbtools(db_agro)
+	for tid in item['u']:
+		data = {'sid': sid, 'svc': 'core/search_item', 'params':{'id': tid, 'flags': flags}}
+		b, sres = twlp.requesr(data, host = HOST)
+		if b:
+			titm = sres['item']
+			idd = titm.get('uid').encode('UTF-8')
+			count_uid = dbi.get_row("SELECT count(*) FROM agro_ts WHERE idd = '%s'" % idd)
+#			print 'count_uid', count_uid, count_uid[0]
+			if count_uid[0] > 1:
+				querys = ["DELETE FROM agro_ts WHERE idd = '%s';" % idd]
+			else:	querys = []
+			
+			pflds = get_pflds (titm['pflds'], ['registration_plate', 'brand', 'vehicle_type', 'model'])
+			if pflds.has_key('registration_plate') and pflds['registration_plate']:
+				gosnum = pflds['registration_plate']
+			else:	gosnum = titm.get('nm').encode('UTF-8')
+			iid = titm.get('id')
+			if count_uid[0] == 1:	# UPDATE
+				sset = "iid = %s, gosnum = '%s'" % (iid, gosnum)
+				if pflds.has_key('brand') and pflds['brand']:	sset += ", marka = '%s'" % pflds['brand']
+				if pflds.has_key('model') and pflds['model']:	sset += ", descrpt = '%s'" % pflds['model']
+				if pflds.has_key('vehicle_type') and pflds['vehicle_type']:	sset += ", rem = '%s'" % pflds['vehicle_type']
+				querys.append ("UPDATE agro_ts SET %s WHERE idd = '%s';" % (sset, idd)) 
+			else:			# INSERT
+				jcol = ['idd', 'iid', 'gosnum']
+				jval = [idd, str(iid), gosnum]
+				if pflds.has_key('brand') and pflds['brand']:
+					jcol.append('marka')
+					jval.append(pflds['brand'])
+				if pflds.has_key('descrpt') and pflds['descrpt']:
+					jcol.append('model')
+					jval.append(pflds['descrpt'])
+				if pflds.has_key('vehicle_type') and pflds['vehicle_type']:
+					jcol.append('rem')
+					jval.append(pflds['vehicle_type'])
+				querys.append ("INSERT INTO agro_ts (%s) VALUES ('%s');" % (', '.join(jcol), "', '".join(jval)))
+			print '\n'.join(querys), dbi.qexecute('\n'.join(querys))
+#			print '\t\tID создателя:', titm.get('crt'), '\tID учетной записи:', titm.get('bact'),
+#			print titm.get('uid').encode('UTF-8')
+#			for k in titm['pflds']:	twlp.ppp(titm['pflds'][k])
+			
+	print 'create_autos\t', '#'*33
+
+def	get_pflds (pflds, keys):
+	dres = {}
+	for k in pflds.keys():
+		if pflds[k]['n'] in keys:
+			dres[pflds[k]['n'].encode('UTF-8')] = pflds[k]['v'].encode('UTF-8')
+	return	dres
+
+def	create_agro (iid = 371, flags = -1):	#
+	""" Создать описатель Агрофирмы и ее полей (геозон)	"""
+	print 'create_agro\t', '#'*33
+	HOST = 'wialon.rnc52.ru'
+	columns = ['rid', 'id', 'n', 'd', 't', 'w', 'f', 'c', 'tc', 'ts', 'min', 'max', 'i', 'path', 'ar', 'pr', 'libid', 'ct', 'mt']
+	import	dbtools
+
+	db_agro = 'host=212.193.103.20 dbname=agro_test port=5432 user=smirnov'
+	dbi = dbtools.dbtools(db_agro)
+	if not dbi:	return
+#	print db_agro, '\tOk'
+
+	sid = loging()
+	print 'loging SID\t', sid
+	data = {'sid': sid, 'svc': 'core/search_item', 'params':{'id': iid, 'flags': flags}}
+	b, sres = twlp.requesr(data, host = HOST)
+	zdesc = {}
+	if b:
+		r = sres['item']
+		print r['nm'].encode('UTF-8')
+		zdesc['rid'] = r['id']
+		print r.keys()
+		for k in r.keys():
+			if k in ['zg', 'zl', 'rep', 'id', 'ftp']:	continue
+			if not r[k]:		continue
+			if k == 'rep':
+				for p in r[k]:
+					twlp.ppp(r[k][p])
+				continue
+		#	twlp.ppp(r[k], k)
+		
+		for p in r['zg']:	twlp.ppp(r['zg'][p], p)	# Группы зон
+
+		for p in r['zl']:	# Описание зон
+			zdesc['id'] = p.encode('UTF-8')
+			zdesc['n'] = r['zl'][p]['n'].encode('UTF-8').replace('   ', ' ')
+			zdesc['d'] = r['zl'][p]['d'].encode('UTF-8').replace('   ', ' ')
+			querys = ["DELETE FROM gzone WHERE rid = %s AND id=%s;" % (zdesc['rid'], zdesc['id'])]
+			for j in r['zl'][p]:
+				if j == 'c':	zdesc['c'] = r['zl'][p][j]
+				if j == 't':	zdesc['t'] = r['zl'][p][j]
+				if j == 'i':	zdesc['i'] = r['zl'][p][j]
+				if j == 'mt':	zdesc['mt'] = r['zl'][p][j]
+				if j == 'ar':	zdesc['ar'] = r['zl'][p][j]
+				if j == 'pr':	zdesc['pr'] = r['zl'][p][j]
+#			twlp.ppp(r['zl'][p], p)
+			jval = []
+			jcol = []
+			for k in columns:
+				if zdesc.get(k):
+					jval.append(str(zdesc.get(k)).replace('  ', ' '))
+					jcol.append(k)
+			querys.append ("INSERT INTO gzone (%s) VALUES ('%s');" % (', '.join(jcol), "', '".join(jval)))
+
+			'''
+			dbord = r['zl'][p].get('b')	# Граници
+			if dbord:
+				jcol = ['rid', 'id']
+				jval = [str(zdesc['rid']), zdesc['id']]
+				for k in dbord.keys():
+					jval.append(str(dbord[k]))
+					jcol.append(k.encode('UTF-8'))
+				querys.append ("INSERT INTO zborder (%s) VALUES (%s);" % (', '.join(jcol), ", ".join(jval)))
+			'''
+			print "INSERT INTO gzone", dbi.qexecute('\n'.join(querys))
+			print '\n'.join(querys)
+#		twlp.ppp(r['zl'], 'zl')
+	#	twlp.ppp(r)
+	else:	print b, sres
+	print 'create_agro\t', '#'*33
+
+	cols = []
+	for j in xrange(255):   cols.append(j)
+	data = {'sid': sid, 'svc': 'resource/get_zone_data', 'params': {'itemId': iid, 'col': cols, 'flags': flags}}
+	b, sres = twlp.requesr(data, host = HOST)
+	if b:
+		for r in sres:
+			dbord = r.get('b')
+			polgn = r.get('p')
+			plist = []
+			for j in polgn:
+				plist.append("(%s,%s)" % (j['x'], j['y']))
+		#	print "'(%s)'" % ','.join(plist)
+
+			querys = ["DELETE FROM zborder WHERE rid = %s AND id=%s;" % (r['rid'], r['id'])]
+			jcol = ['rid', 'id', 'p']
+			jval = [str(r['rid']), str(r['id']), "'(%s)'" % ','.join(plist)]
+			for k in dbord.keys():
+				jval.append(str(dbord[k]))
+				jcol.append(k.encode('UTF-8'))
+			for k in ['n','d']:
+				if r[k]:
+					jval.append("'%s'" % r[k].encode('UTF-8').replace('  ', ' '))
+					jcol.append(k)
+			for k in ['t', 'w', 'f', 'c', 'tc', 'ts', 'ct', 'mt']:
+				if r[k]:
+					jval.append(str(r[k]))
+					jcol.append(k)
+			querys.append ("INSERT INTO zborder (%s) VALUES (%s);" % (', '.join(jcol), ", ".join(jval)))
+	#		twlp.ppp (r)
+			print '\n'.join(querys)
+			print "INSERT INTO zborder", dbi.qexecute('\n'.join(querys))
+	else:	print b, sres
+	'''
+	'''
+	print 'create_agro\t', '#'*33
+
+def	tests ():
+	HOST = 'wialon.rnc52.ru'
+	print "Test (проверка наличия соединения с сервером Wialon БД РНИС)"
+	for k in usr2token:
+		print "\t%s =>\t" % k, usr2token[k],
+		data = {'svc': 'token/login', 'params': {'token':'%s' % usr2token[k] }}
+		b, sres = twlp.requesr(data, host = HOST)
+		print "\t%s" % b,
+		if b:	print sres.get('eid')
+		else:	print sres
+
+def	loging (user = 'wialon'):
+	HOST = 'wialon.rnc52.ru'
+	data = {'svc': 'token/login', 'params': {'token':'%s' % usr2token[user] }}
+	b, sres = twlp.requesr(data, host = HOST)
+	if b:	return sres['eid']
+	print 'loging user:', user, b, sres
+
 if __name__ == "__main__":
 	sttmr = time.time()
 	print "Start PID: %i\t" % os.getpid(), sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
-	FlTesr =	False
+	FlTest =	False
 	FlHWTyps =	False
 	FlUsers =	False
 	FlOUnits =	False
@@ -544,13 +744,13 @@ if __name__ == "__main__":
 	FlNoData = 	False
 	itemTypes = ['avl_unit', 'avl_unit_group', 'avl_resource']
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'thwpUu:i:P:')
+		optlist, args = getopt.getopt(sys.argv[1:], 'thwpUu:i:P:a')
 		if not optlist:	outhelp()
 
 		for o in optlist:
 			if o[0] == '-P':	update_apasswd (o[1:])
 			if o[0] == '-h':	outhelp()
-			if o[0] == '-t':	FlTesr =	True
+			if o[0] == '-t':	FlTest =	True
 			if o[0] == '-w':	FlHWTyps =	True
 			if o[0] == '-U':	FlUsers =	True
 			if o[0] == '-p':	FlNoData =	True
@@ -560,11 +760,15 @@ if __name__ == "__main__":
 			if o[0] == '-i':
 				FlgetLog = True
 				fileLog = o[1]
+			if o[0] == '-a':
+			#	create_agro ()
+				create_autos ()
 
-		main ({'shstat': 'connect'})
-		if FlTesr:
-			add_into_group (sid, 36, [336, 337])
+	#	main ({'shstat': 'connect'})
+		if FlTest:
+			tests()
 			'''
+			add_into_group (sid, 36, [336, 337])
 			for k in list_unit_groups.keys():	print "%4d\t" % k,  list_unit_groups[k]
 			get_items ({'wsid': sid}, 'avl_unit', func = out_pos, flags = 0x0401)
 			'''
@@ -574,6 +778,7 @@ if __name__ == "__main__":
 		if FlHWTyps:	main ({'shstat': 'get_hw_types', 'wsid': sid}) 
 		if FlUsers:	main ({'shstat': 'get_users', 'wsid': sid})
 		if FlOUnits:
+			sid = loging()
 			if itemType in itemTypes:
 				get_items ({'wsid': sid}, itemType, func = out_items)
 			else:	"Ошибка типа '%s'!\n" % itemType , outhelp()
