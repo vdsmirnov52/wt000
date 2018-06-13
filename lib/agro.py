@@ -198,7 +198,7 @@ def	get_tansport (request):
 			if r[d.index('marka')]:	gosnum += '<br>' +r[d.index('marka')]
 			ddd.append([float(r[d.index('x')]), float(r[d.index('y')]), '%s' % str_time (r[d.index('t')], jtm).replace("'", ''), gosnum, icon])
 	return	ddd
-
+'''
 #	371 	Агрофирма РУСЬ 	item 
 def	search_szone (itemId = 371):
 	import	twlp
@@ -207,13 +207,15 @@ def	search_szone (itemId = 371):
 	data = {'sid': request['wsid'], 'svc': 'resource/get_zone_data', 'params': {'itemId': itemId, 'col': cols, 'flags': -1}}
 	fres, sres = twlp.requesr(data)
 	print   sres
+'''
 
 def	set_gzone (request):
+	""" Показать / Скрыть геозону	"""
 	gzid = request.get('gzid')
 	if not (gzid and gzid.isdigit()):
 		print 'set_gzone', request, gzid
 		return
-	print 'ZZZZZ set_gzone', request, gzid
+#	print 'ZZZZZ set_gzone', request, gzid
 	igzid = int(gzid)
 	rid = igzid/1000
 	rzid = igzid%1000
@@ -240,10 +242,10 @@ def	set_gzone (request):
 
 def	view_gzones (request):
 	itemId = 371
+	print '~rmiddle|'
 	print '~rtop|'
-	print """<div class='list-group-item list-group-item-action active tit'><span class='tit'> <i class="fa fa-object-ungroup" aria-hidden="true"></i> Поля:</span>
+	print """<div class='list-group-item list-group-item-action active tit'><span class='tit'> <i class="fa fa-object-ungroup fa-lg" aria-hidden="true"></i> Поля:</span>
 		<span class="float-right" onclick="set_zone_list ('%s'); "> Показать все </span></div>""" % (1000*itemId)
-	#	<i class="fa fa-times" aria-hidden="true" onclick="//$('#rmiddle').html('')"></i>&nbsp;</span></div>""" % (1000*itemId)
 
 	inn = request.get('org_inn')
 	if not (inn and inn.isdigit()):	return
@@ -255,21 +257,25 @@ def	view_gzones (request):
 	for r in res[1]:
 		gzid = 1000*itemId + r[d.index('id')]
 		gzids.append(gzid)
-		print """<li class='list-group-item list-group-item-action d-flex justify-content-between align-items-center' onclick="set_zone_list ('%s')">
-			<span id='li%s'> %s </span> <span class="badge badge-primary badge-pill" style="background-color: #%06x; color: #%06x; opacity: 0.8">%s</span></li>""" % (
-			gzid, gzid, r[d.index('n')], (0xffffff & r[d.index('c')]), (0xffffff & (0xffffff ^ r[d.index('c')])), r[d.index('c')])
+		print """<li class='list-group-item list-group-item-action d-flex justify-content-between align-items-center' >
+			<span id='li%s' onclick="set_zone_list ('%s');"> %s </span> <span class="badge badge-primary badge-pill" style="background-color: #%06x; color: #%06x; opacity: 0.8">%s
+			<span onclick="set_shadow('gzon_infoww&gzid=%s');">&nbsp; <i class="fa fa-flag fa-lg" aria-hidden="true"></i>&nbsp;</span>
+			</span></li>""" % (
+			gzid, gzid, r[d.index('n')], (0xffffff & r[d.index('c')]), (0xffffff & (0xffffff ^ r[d.index('c')])), r[d.index('c')], gzid)
 	print "~eval| check_gzone_list (%s); " % str(gzids)
 
 def	view_tranports (request):
 	itemId = 371
 	inn = request.get('org_inn')
 	print '~rtop|'# request['org_inn']
-	print """<div class='list-group-item list-group-item-action active'><span class='tit'> <i class="fa fa-truck" aria-hidden="true"></i> Транспорт:</span><span class="float-right">
-		<i class="fa fa-times" aria-hidden="true" onclick="$('#rmiddle').html('')"></i>&nbsp;</span></div>"""
+	print """<div class='list-group-item list-group-item-action active'><span class='tit'> <i class="fa fa-truck fa-lg" aria-hidden="true"></i> Транспорт:</span><span class="float-right">
+		<i class="fa fa-times fa-lg" aria-hidden="true" onclick="$('#rmiddle').html('')"></i>&nbsp;</span></div>"""
 	dbi = dbtools.dbtools('host=212.193.103.20 dbname=agro_test port=5432 user=smirnov')
 #	res = dbi.get_table ('agro_ts', 'inn = %s AND iid > 0 ORDER BY gosnum' % inn)
 	res = dbi.get_table ('agro_ts t LEFT JOIN last_pos p ON t.idd = p.idd', 't.inn = %s AND t.iid > 0 ORDER BY gosnum' % inn, 't.*, p.x, p.y, p.t, p.sp, p.st')
-	if not res:	return
+	if not res:
+		if not dbi.last_error:	print "<span class='bfinf'> Нет данных! </span>"
+		return
 	d = res[0]
 	for r in res[1]:
 		if len(r[d.index('gosnum')]) < 14:
@@ -277,16 +283,20 @@ def	view_tranports (request):
 		if not r[d.index('t')]:
 			onclick = "alert('Нет данных!')"
 			gosnum = "<span class='bferr'>%s</span>" % gosnum	# r[d.index('gosnum')]
-			buttons = """<span style="font-size:16px">
+			buttons = """<span style="font-size:16px; padding: 2px;">
 			<i class="fa fa-area-chart" aria-hidden="true"></i> 
 			<i class="fa fa-cog" aria-hidden="true"></i>
+			<i class="fa fa-wrench fa-rotate-270" aria-hidden="true"></i>
+			<i class="fa fa-flag" aria-hidden="true"></i>
 			</span>"""
 		else:
-			onclick = "set_shadow('view_cradar&idd=%s'); mymap.setView([%s,%s]);" % (r[d.index('idd')], r[d.index('y')], r[d.index('x')])	#, r[d.index('idd')])
+		#	onclick = "set_shadow('view_cradar&idd=%s'); mymap.setView([%s,%s]);" % (r[d.index('idd')], r[d.index('y')], r[d.index('x')])	#, r[d.index('idd')])
+			onclick = "mymap.setView([%s,%s]);" % (r[d.index('y')], r[d.index('x')])
 			gosnum = "<span class='bfinf'>%s</span>" % gosnum	# r[d.index('gosnum')]
-			buttons = """<span style="font-size:16px" class='bfinf'>
+			buttons = """<span style="font-size:16px; padding: 2px;" class='bfinf'>
 			<i title='Графики' class="fa fa-area-chart" aria-hidden="true" onclick="set_shadow('view_cradar&idd=%s');"></i> 
 			<i title='Параметры' class="fa fa-cog" aria-hidden="true" onclick="set_shadow('sets_params&idd=%s');"></i>
+			<i class="fa fa-wrench fa-rotate-270" aria-hidden="true"></i>
 			</span>""" % (r[d.index('idd')], r[d.index('idd')])
 		'''
 		print onclick, gosnum, str_time(r[d.index('t')])"<br>"
@@ -294,49 +304,6 @@ def	view_tranports (request):
 		print """<li class='list-group-item list-group-item-action d-flex justify-content-between align-items-center'>
 			<span onclick="%s"> %s %s </span> <span class="badge badge-primary badge-pill" style="background-color: #ddf; "> %s </span> </li>""" % (
 			onclick, gosnum, str_time(r[d.index('t')], speed = r[d.index('sp')]), buttons )	#, r[d.index('iid')], r[d.index('iid')])
-
-dict_reports = {'probeg': 'Пробег транспорта', 'DUT': 'Отчет по ДУТ', 'pro_dut': 'Сводный рапорт'}
-
-def	list_reports (request):
-	print '~rtop|'
-	print """<div class='list-group-item list-group-item-action active'><span class='tit'> <i class="fa fa-area-chart" aria-hidden="true"></i> Отчеты:</span><span class="float-right">
-		<i class="fa fa-times" aria-hidden="true" onclick="$('#rmiddle').html('')"></i>&nbsp;</span></div>"""
-	for k in dict_reports.keys():
-		print """<li class='list-group-item list-group-item-action d-flex justify-content-between align-items-center'>
-			<span class='tit' onclick="set_shadow('view_report&rt=%s')"> %s </span></li>""" % (k, dict_reports[k])
-
-def	view_report (request):
-	print "view_report", request
-#	print "~widget|<div style='z-index: 1111; top: 40%; left: 10%; width: 80%; box-shadow: 0 5px 17px rgba(0,0,0,.5); position: absolute; padding: 2px; margin: 4px; min-width: 400px; border: thin solid #861; background-color: #eea;'>"
-	k = request.get('rt')
-	if k:
-		rname = dict_reports[k]
-	else:	rname = "QWERTY"
-	print "~widget|<div class='mmodal' style='z-index: 1050;'>"
-	print """<div class='list-group-item list-group-item-action active'><span class='tit'> <i class="fa fa-area-chart" aria-hidden="true"></i> %s </span><span class="float-right">
-		<i class="fa fa-times" aria-hidden="true" onclick="$('#widget').html('')"></i>&nbsp;</span></div>""" % rname
-#	print "<div style='border: thin solid #668; width: 1000px; height: 200px;'><canvas id='popChart' width=500 height=200></canvas><canvas id='timeChart' width=500 height=200></canvas></div>"
-#	print "<div style='border: thin solid #668; width: 1000px; height: 200px;'><canvas id='timeChart' width=500 height=200></canvas></div>"
-	if k == 'pro_dut':
-		print """<section>1. В отчете по пробегу помимо длительности каждой поездки, хотелось бы видеть конкретную дату и время каждой поездки.<br>
-			 ВОПРОС:  возможно ли совмещение отчетов по пробегу и по дут????</section>
-		<section> 2. Отчет по ДУТ - по каждой машине, по каждому дню остатки на начало и на конец дня, а не только периоды заправки или сливов.
-		</section>"""
-	elif k == 'DUT':
-		cols = ['Объекты', 'Ширина агрегата', 'Поле', 'Первый выезд', 'Последний выезд', 'Время движения, Простой', 'Пробег, км', 'Средн. скорость, км/ч', 'Расход, л', 'Общая площадь, га',
-		'Обработанная площадь, га', 'Плошадь наложений, га', 'Плошадь необраб. га', 'Производи тельность, га/сутки', 'Расход, л/га', ]
-		print "<table><tr align='center' valign='top' bgcolor=#ccccee>"
-		for th in cols:
-			print "<td valign='top'>%s</td>" % th
-		print "</tr><tr>"
-		for td in xrange(len (cols)):
-			print "<td> val %03d </td>" % td
-		print "</tr></table>"
-	elif k == 'probeg':
-		view_canvas (request)
-		return
-	else:	print '#'* 55, k
-	print "</div>"
 
 def	view_canvas (request):
 #	print "~rmiddle|"
@@ -369,7 +336,7 @@ def	view_canvas (request):
 	dspeed = []
 	dr = pr = 0.0
 	dsp = psp = 0.0
-	Rz = 6371.302
+	Rz = (6378.2450+6356.863019)/2	# Радиус земли km 6371.302
 	gosnum = None
 	import	math
 	for r in res[1]:
@@ -401,7 +368,7 @@ def	view_canvas (request):
 	print '<br>', dtms, len (dtms)
 	print '<br>', data, len (data)
 	'''
-	print "~rmiddle|<div style='height: 200px;'><canvas id='timeChart' width=400 height=200></canvas></div>"
+	print "~rmiddle|<div style='height: 200px;'>"	#<canvas id='timeChart' width=400 height=200></canvas></div>"
 	###	Highcharts.chart
 	print "<div id='QWERTY' style='height: 300px;'></div>"
 	print """~eval|$(function () { 
@@ -418,39 +385,26 @@ def	view_canvas (request):
 	print """~eval| big_canvas('#timeChart', '%s', '%s');""" % (json.dumps(dtms), json.dumps(data))
 	print "~eval| view_canvas('#timeChart');"
 	print "~eval| my_canvas('#timeChart', '%s');" % json.dumps(data)
-
-def	sets_params (request):
-	sidd = request.get('idd')
-	dbi = dbtools.dbtools('host=212.193.103.20 dbname=agro_test port=5432 user=smirnov')
-	row = dbi.get_dict ("SELECT d.*, p.params FROM vdata_pos d LEFT JOIN last_prms p ON p.idd = d.idd AND (p.tm+p.dtm) = d.t  WHERE d.idd = '%s'" % sidd)
-	print "~rmiddle|"
-	print """<div class='list-group-item list-group-item-action active tit'><span class='tit'> <i class="fa fa-cog" aria-hidden="true"></i> %s </span>
-                &nbsp; <span class="float-right"><i class="fa fa-times" aria-hidden="true" onclick="$('#rmiddle').html('')"></i>&nbsp;</span>
-		&nbsp; <span class="float-right"> Save &nbsp; </span>
-		</div> """ % row['gosnum']
-	if not row:
-		print "Нет данных!"
-		return
-	sparams = row.get('params')
-	if not sparams:
-		print "Параметры отсутствуют!"
-		return
-	params = json.loads(sparams)
-	print params
-	for k in params.keys():
-		print """<li class='list-group-item list-group-item-action d-flex justify-content-between align-items-center'> %s
-		&nbsp; <span class="float-right"> %s &nbsp; </span>
-		</li>""" % ( k, params[k])
 '''
 
 def	ajax (sname, request, referer):
 	shstat = request.get('shstat')
-	print "~log|AJAX:", request, '<br />'	#, referer, sname
+	print "~log|"	#AJAX:", request, '<br />'	#, referer, sname
+	if shstat in ['view_report', 'list_reports', 'gzon_infoww']:
+		import	areports
+		if shstat == 'list_reports':
+			areports.list_reports (request)
+			print "~eval| document.myForm.status.value='%s';" % shstat
+		elif shstat == 'view_report':	areports.view_report (request)
+		elif shstat == 'gzon_infoww':	areports.gzon_infoww (request)
+		else:	print "#"*11, shstat
+		return
+
 	if shstat == 'get_tansport':
 		ts_list = get_tansport (request)
 		if ts_list:
 			print "~eval|out_data('%s');" % json.dumps(ts_list)
-			print "~eval| mymap.setView([56.8238, 43.5598], 14)"
+		#	print "~eval| mymap.setView([56.8238, 43.5598], 14)"
 		else:	print '~eval| alert("ZZZ");'
 	elif shstat == 'view_canvas':
 		ts_list = get_tansport (request)
@@ -458,7 +412,6 @@ def	ajax (sname, request, referer):
 			print "~eval|out_data('%s');" % json.dumps(ts_list)
 		status = request.get('status')
 		if status == 'view_tranports':	view_tranports (request)
-	elif shstat == 'view_report':		view_report (request)
 	elif shstat == 'set_gzone':		set_gzone (request)
 	elif shstat == 'view_cradar':		view_canvas (request)
 	elif shstat == 'view_gzones':
@@ -466,9 +419,6 @@ def	ajax (sname, request, referer):
 		print "~eval| document.myForm.status.value='%s';" % shstat
 	elif shstat == 'view_tranports':
 		view_tranports (request)
-		print "~eval| document.myForm.status.value='%s';" % shstat
-	elif shstat == 'list_reports':
-		list_reports (request)
 		print "~eval| document.myForm.status.value='%s';" % shstat
 	elif shstat == 'view_gosnum':
 		isview = request.get('view_gosnum')
