@@ -116,15 +116,119 @@ def	view_report (request):
 	else:	print '#'* 55, k
 	print "</div>"
 
+def	translit (string, code = 'utf-8'):
+	rs = []
+	for c in unicode(string, code).encode('koi8-r'):	rs.append (chr(0x7f & ord(c)))
+	return	"".join(rs)
+
 def	probeg (request, tm_beg = None, tm_end = None):
 	""" Пробег	"""
+	conf = aconf.aconf()
 	print	'tm_beg', tm_beg, 'tm_end', tm_end
 	currtm = 86400 * int(time.time()/86400) - (3600*24*30)
 	zrid = 371
 	zid = 1
+	stm = time.time()	### DEBUG
+	print """<div style='height: 400px; overflow: auto; padding: 11px;'><table border=2px width=100%%>
+		<tr align='center'><th>Объект</th><th>Дата</th><th> Пробег (км) </th>
+		<th> Остаток топлива (л) </th>
+		<th> Расход топлива (л) </th>
+		<th> Общий пробег (км) </th>
+		<th> Общий Расход топлива (л) </th>
+		<th> Остаток топлива (л) </th></tr>"""
+	jtr = 0
+	for gosnum in conf.ts_reports:
+		ls_time = [ time.strftime("%d-%m-%y", time.localtime(tm_beg)) ]
+		ls_gpsmil = []		# Пробег
+		ls_flevel = []		# Расход топлива
+		ls_BOflevel = []	# остаток на начало суток
+		jtm = tm_beg + 86400
+
+	#	print "<tr id='_%s'><td><span class='bfinf'> %s </span></td>" % (translit(gosnum), gosnum)
+		swhere = "d.t > %s AND d.t != %s AND j.gosnum = '%s' AND j.id_dp = d.id_dp ORDER BY d.t " % (tm_beg, tm_end, gosnum)
+		res = conf.db_agro.get_table ('journal_ts j, data_pos d', swhere, "j.*, d.t, d.x, d.y, d.sp")
+		if res:
+			if jtr % 2:	trcolor = "bgcolor=#eeeeff"
+			else:		trcolor = ""
+			jtr += 1
+			print "<tr id='_%s' %s><td><span class='bfinf'> %s </span></td>" % (translit(gosnum), trcolor, gosnum)
+			d =	res[0]
+			gpsmil0 = None
+			flevel0 = Sflevel = Oflevel = BOflevel = None
+			flevel_up = False
+			'''
+			flevel0 =	float(r[d.index('flevel')])
+			ftank0 =	float(r[d.index('ftank')])
+			ftank10 =	float(r[d.index('ftank1')])
+			Sfsp =		float(r[d.index('fsp')])
+			Sgpssp =	float(r[d.index('gpssp')])
+				Sfsp +=		float(r[d.index('fsp')])
+				Sgpssp +=	float(r[d.index('gpssp')])
+			'''
+			j = 0
+			for r in res[1]:
+				if r[d.index('gpsmil')]:	# Пробег
+					jgpsmil = float(r[d.index('gpsmil')])
+					if not gpsmil0:		gpsmil00 = gpsmil0 = jgpsmil
+				if r[d.index('t')] > jtm:	# Конец суток
+					ls_time.append (time.strftime("%d-%m-%y", time.localtime(jtm)))
+					ls_gpsmil.append ('%6.2f' % (jgpsmil - gpsmil0))
+					gpsmil0 = jgpsmil
+					if type(Sflevel) == float:	ls_flevel.append ('%6.2f' % Sflevel)
+					if type(Oflevel) == float:
+						BOflevel = Oflevel
+						ls_BOflevel.append ('%6.2f' % BOflevel)
+
+					jtm += 86400
+
+					'''
+				if r[d.index('gpsmil')]:
+					jgpsmil = float(r[d.index('gpsmil')])
+					if not gpsmil0:		gpsmil00 = gpsmil0 = jgpsmil
+					'''
+				if r[d.index('flevel')]:
+					Oflevel = jflevel = float(r[d.index('flevel')])
+					if not flevel0:
+						BOflevel = flevel0 = jflevel
+						ls_BOflevel.append ('%6.2f' % BOflevel)
+					if jflevel > flevel0:
+						if flevel_up == False:
+							flevel_up = True
+							Sflevel = flevel0 - oflevel
+						else:	flevel0 = jflevel
+					else:
+						flevel_up = False
+						oflevel = jflevel
+
+			ls_gpsmil.append ('%6.2f' % (jgpsmil - gpsmil0))
+			if type(Sflevel) == float:	ls_flevel.append ('%6.2f' % Sflevel)
+			print "<td align='center'> %s </td>" % "<br>".join(ls_time)
+			print "<td align='right'> %s </td>" % "<br>".join(ls_gpsmil)
+			print "<td align='right'> %s </td>" % "<br>".join(ls_BOflevel)
+			print "<td align='right'> %s </td>" % "<br>".join(ls_flevel)
+
+			print "<td align='right'> %6.2f </td>" % (jgpsmil - gpsmil00)
+			'''
+			'''
+			if type(Sflevel) == float:
+				print "<td align='right'> %6.2f </td>" % Sflevel
+			else:	print "<td> &nbsp; </td>"	#<span class='bferr'> None </span></td>"
+			if type(Oflevel) == float:
+				print "<td align='right'> %6.2f </td>" % Oflevel
+			else:	print "<td> &nbsp; </td>"
+		#	print "<td> % </td>"	
+		#	print "<td> % </td>"	
+		#	print "<td>", r[d.index('gpsmil')], type(r[d.index('gpsmil')]), float(r[d.index('gpsmil')]), "</td>"
+	#	else:	print "<td><span class='bferr'> Нет данных!</span></td>"
+	#	print "<td>", translit(gosnum), "</td>"
+			print "</tr>"
+	print "</table></div>"
+	print "DTM:", time.time() - stm		### DEBUG
+	'''
 #	res = db_agro.get_table ('vdata_pos', "point (x,y) @ (select p FROM zborder WHERE rid = %s AND id = %s) AND t > %s ORDER BY idd, t DESC LIMIT 11;" % (zrid, zid, currtm))
 	res = db_agro.get_table ('last_prms p, vdata_pos d', "p.tm + p.dtm = d.t AND p.idd = '864287036627022' ORDER BY d.t;", "d.gosnum, d.t, d.sp, p.dtm, p.params")
 	out_table(res)
+	'''
 
 def	out_table(res):
 	d = res[0]
@@ -154,7 +258,7 @@ def	trans_canvas (request, tm_beg = None, tm_end = None, gosnum = 'Н213ВК152'
 	for gosnum in conf.ts_reports:
 		print """<li class='list-group-item list-group-item-action d-flex justify-content-between align-items-center'>
 			<span class='bfinf' onclick="set_shadow('view_report&rt=debug_canvas&gosnum=%s&iddom=trans_canvas')"> %s </span> </i>""" % (gosnum, gosnum)
-	print "</td><td id='trans_canvas' style='height: 310px;'> &nbsp; </td></tr></table>"
+	print "</td><td id='trans_canvas' style='height: 310px;' valign='top'> &nbsp; </td></tr></table>"
 '''
 <li class='list-group-item list-group-item-action d-flex justify-content-between align-items-center'>
 			<span onclick="mymap.setView([56.824147,43.560653]);"> <span class='bfinf'>52НН5225&nbsp;&nbsp;&nbsp;&nbsp;</span> <span class='fgrey sz12'> &nbsp; <b>2</b> мин назад</span> &nbsp; <span class='bferr sz12'>Стоит </span> </span> <span class="badge badge-primary badge-pill" style="background-color: #ddf; "> <span style="font-size:16px; padding: 2px;" class='bfinf'>
@@ -166,6 +270,8 @@ def	trans_canvas (request, tm_beg = None, tm_end = None, gosnum = 'Н213ВК152'
 	
 def	debug_canvas (request, tm_beg = None, tm_end = None):
 	conf = aconf.aconf()
+	tm_beg = int (tm_beg)
+	tm_end = int (tm_end)
 	gosnum = request.get ('gosnum')
 	if not gosnum:	gosnum = 'Н213ВК152'
 	iddom = request.get ('iddom')	# trans_canvas
@@ -203,9 +309,54 @@ def	debug_canvas (request, tm_beg = None, tm_end = None):
 	d_zid = []
 	szid = 0
 	d_flevel = []
+	jpoints = []
 	flevel = 0.0
+	d_pwr_in = []
+	pwr_in = 0
 
 	import	math
+	j = 0
+	if tm_end > time.time():	tm_end = dtime+ time.time()
+	for t00 in xrange (int(tm_beg), int(tm_end), dtime):
+		jp = 0
+		while j < len (res[1]):
+			r = res[1][j]
+			rt = r[d.index('t')]
+			jp += 1
+			if rt > t00:		break	##########
+			if r[d.index('zid')] and r[d.index('zid')] > 0:
+				szid = 10+ r[d.index('zid')]
+			else:	szid = 0
+
+			if r[d.index('x')]:
+				pr = ((X0-float(r[d.index('x')]))**2 + (Y0-float(r[d.index('y')]))**2)
+				pr = Rz*math.sqrt(pr)*math.pi/180
+				if dr == 0.0:	dr = pr
+				psp = float(r[d.index('sp')])
+				if dsp == 0.0:	dsp = psp
+				dr = (dr + pr)/2
+				dsp = (dsp + psp)/2
+			else:
+				dr = dsp = dfsp = 0.0
+			j += 1
+		if r[d.index('pwr_in')] != None:
+			d_pwr_in.append ("%d" % (10*r[d.index('pwr_in')]))
+		else:	d_pwr_in.append ('-5')
+		if jp > 1:
+			jpoints.append ('30')
+		else:	jpoints.append ('0')
+		if r[d.index('flevel')]:	d_flevel.append ("%5.2f" % (r[d.index('flevel')]/10))
+		if r[d.index('pwr')] and r[d.index('pwr')] > 6:
+			d_pwr.append(str(int(r[d.index('pwr')])))
+		else:	d_pwr.append("0")
+		d_zid.append("%d" % (szid))
+		data.append("%.1f" % dr)
+		dspeed.append("%d" % int(dsp))
+		if (t00+10800) % 86400 == 0:
+			dtms.append(time.strftime('%d %b %H:%M', time.localtime(t00)))
+		else:	dtms.append(time.strftime('%H:%M', time.localtime(t00)))
+#	print d_pwr_in
+	'''
 	for r in res[1]:
 	#	if not gosnum:	gosnum = r[d.index('gosnum')]
 	#	if not r[d.index('x')]:	continue
@@ -245,7 +396,7 @@ def	debug_canvas (request, tm_beg = None, tm_end = None):
 		dfsp = (dfsp + pfsp)/2
 #	print "<hr>", rt,  (rt-tm_beg)/3600, time.strftime('%T %d.%m.%Y', time.localtime(r[d.index('t')])) 
 #	return
-
+	'''
 	print "<div id='debug_canvas' style='height: 300px;'></div>"	
 	print "</div>"
 	chart = "type: 'spline'"
@@ -256,10 +407,13 @@ def	debug_canvas (request, tm_beg = None, tm_end = None):
 	speed = "name: 'Скрость км/ч', color: '#ff6666', data: [%s]" % ",".join(dspeed)
 	fspeed = "name: 'V GPS км/ч', color: '#ee66bb', data: [%s]" % ",".join(dfspeed)
 #	power = "name: 'pwr', color: '#dddddd', data: [%s]" % ",".join(d_pwr)
-	series_list = [exits, speed, fspeed]
+	series_list =  [exits, speed]
+	if jpoints:	series_list.append ("name: 'jPoint', color: '#00ffcc', fillOpacity: 0.5, data: [%s]" % ",".join(jpoints))
+	if dfspeed:	series_list.append ("name: 'Скрость км/ч', color: '#ff6666', data: [%s]" % ",".join(dspeed))
 	if d_flevel:	series_list.append ("name: 'Уровеннь топлива, x10 л', color: '#aa7700', data: [%s]" % ",".join(d_flevel))
-	if d_pwr:	series_list.append ("name: 'pwr', color: '#ccccdd', data: [%s]" % ",".join(d_pwr))
-	if d_zid:	series_list.append ("name: 'ZID', color: '#00aa00', data: [%s]" % ",".join(d_zid))
+	if d_pwr:	series_list.append ("name: 'Зажигание', color: '#ccccdd', data: [%s]" % ",".join(d_pwr))
+	if d_pwr_in:	series_list.append ("name: 'pwr_in', color: '#ccccff', data: [%s]" % ",".join(d_pwr_in))
+	if d_zid:	series_list.append ("name: 'Поле', color: '#00aa00', data: [%s]" % ",".join(d_zid))
 
 	series = "},\n{".join(series_list)
 	print """~eval|

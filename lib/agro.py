@@ -402,12 +402,14 @@ def	ajax (sname, request, referer):
 
 	if shstat == 'get_tansport':
 		ts_list = get_tansport (request)
+		print "~jtime|", time.strftime("%T", time.localtime (time.time()))
 		if ts_list:
 			print "~eval|out_data('%s');" % json.dumps(ts_list)
 		#	print "~eval| mymap.setView([56.8238, 43.5598], 14)"
 		else:	print '~eval| alert("ZZZ");'
 	elif shstat == 'view_canvas':
 		ts_list = get_tansport (request)
+		print "~jtime|", time.strftime("%T", time.localtime (time.time()))
 		if ts_list:
 			print "~eval|out_data('%s');" % json.dumps(ts_list)
 		status = request.get('status')
