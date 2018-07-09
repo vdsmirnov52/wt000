@@ -173,7 +173,7 @@ def	set_last_date (ts_list):
 		if not dts_list.has_key(gosnum):	continue
 		jstime = time.strftime("%Y-%m-%d %T", time.localtime(dts_list[gosnum]))
 	#	print id_ts, gosnum, id_att, last_date, bm_wtime, mark, jstime
-		if jstime > str(last_date):	# > jstime:
+		if not last_date or jstime > str(last_date):	# > jstime:
 			query = "UPDATE atts SET last_date = '%s', bm_wtime = bm_wtime | 512 WHERE id_att = %d;" % (jstime, id_att)
 			print gosnum, "\t", query, dbContr.qexecute(query)
 	#	else:	print "<<<"
@@ -359,10 +359,12 @@ def	autos_inn ():
 					iinn = int(iv['v'])
 					break
 		
-			if iinn == 5258067224:	# 720 ДТ-НН СпецДорСтрой 718      5258067224
+			if iinn in [5258067224, 5249006828]:	# 720 ДТ-НН СпецДорСтрой 718 5258067224	# id:918  МУП "Экспресс" 5249006828
 				gosnum = reg_plate
 			elif gosnum != reg_plate:
 				print item['id'], '\t \x1b[1;33m NM: %s != %s reg_plate \x1b[0m' % (gosnum, reg_plate), out_pos(item.get('pos')), iinn
+				if reg_plate:
+					print "\t", "UPDATE transports SET garnum = '%s', gosnum = '%s' WHERE gosnum = '%s';" % (gosnum, reg_plate, gosnum)
 			else:
 				print item['id'], '\t', gosnum, out_pos(item.get('pos')), iinn	#, chres
 			'''
