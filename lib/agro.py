@@ -172,8 +172,8 @@ def	get_tansport (request):
 			icon = 'blue'
 		else:	icon = 'green'
 		if r[d.index('gosnum')]:
-			gosnum = '<b>%s</b>' % r[d.index('gosnum')]
-		else:	gosnum = '<b>%s</b>' % r[d.index('nm')]
+			gosnum = '%s' % r[d.index('gosnum')]
+		else:	gosnum = '%s' % r[d.index('nm')]
 		'''
 		if r[d.index('sp')] and r[d.index('sp')] > 0:
 			gosnum += ' &nbsp; v:%dкм/ч' % r[d.index('sp')]
@@ -209,6 +209,16 @@ def	search_szone (itemId = 371):
 	print   sres
 '''
 
+'''
+var polyline = new L.Polyline([
+  [-45, 45],
+  [45, -45],[33,-33]
+], {
+  color: 'green',
+  weight: 5,
+  opacity: 0.5
+}).addTo(map);
+'''
 def	set_gzone (request):
 	""" Показать / Скрыть геозону	"""
 	gzid = request.get('gzid')
@@ -339,6 +349,7 @@ def	view_canvas (request):
 	Rz = (6378.2450+6356.863019)/2	# Радиус земли km 6371.302
 	gosnum = None
 	import	math
+	points = []
 	for r in res[1]:
 		if not gosnum:	gosnum = r[d.index('gosnum')]
 	#	if not r[d.index('x')]:	continue
@@ -346,6 +357,7 @@ def	view_canvas (request):
 		
 #		print time.strftime("<br> %D %T", time.localtime(rt)), pr
 		if r[d.index('x')]:
+			points.append("[%s,%s]" % (float(r[d.index('y')]), float(r[d.index('x')])))
 			pr = ((X0-float(r[d.index('x')]))**2 + (Y0-float(r[d.index('y')]))**2)
 			pr = Rz*math.sqrt(pr)*math.pi/180
 			psp = float(r[d.index('sp')])
@@ -380,6 +392,9 @@ def	view_canvas (request):
         series: [{ name: 'Расстояние км', data: [%s]
         	},{ name: 'Скрость км/ч', color: '#ff6666', data: [%s]
         }] }); }); """ % (gosnum, "','".join(dtms), ",".join(data), ",".join(dspeed))
+#	print "~eval| list_tracks['red'] = new L.Polyline([ [56.5,44], [57,44], [57,43.5], [56.5, 43.5] ], { color: 'red', weight: 3, opacity: 0.5 }).addTo(mymap);       mymap.fitBounds(list_tracks['red'].getBounds());"
+
+	print "~eval| clear_map_object(list_tracks); list_tracks['blue'] = new L.Polyline([%s], { color: 'blue', weight: 3, opacity: 0.5 }).addTo(mymap);       mymap.fitBounds(list_tracks['blue'].getBounds());" % ",".join(points)
 
 '''
 	print """~eval| big_canvas('#timeChart', '%s', '%s');""" % (json.dumps(dtms), json.dumps(data))
