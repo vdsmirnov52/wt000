@@ -161,7 +161,7 @@ def	get_json (fname):
 				print len(g), 'ZZZ\t', g
 ####	get_json	#######################
 
-if __name__ == "__main__":
+def	get_base_json ():
 	ddd = { 1: r'data/autozavod.json',
 		2: r'/kanavino.json', 3: r'/lenin.json', 4: r'/moskva.json', 5: r'/nijegorod.json', 6: r'/priofski.json', 8: r'/sormovo.json', 7: r'/sovetski.json' }
 	print "Start", sys.argv[0], time.strftime("%Y-%m-%d %T", time.localtime(time.time()))
@@ -174,3 +174,125 @@ if __name__ == "__main__":
 			print "\tРазбор файла '%s':" % fname
 			get_json (fname)
 	print
+
+def	get_patch_json (fname):
+	"""
+	diff territory.json territory-OLD.json
+	< - add
+	> - del
+	"""
+	f = open(fname, 'r')
+	l = f.readline()
+	j = 0
+	while l:
+	#	print l[:100]
+		if l[0] in "<>{":
+			desc, geom = l.strip().split('@')
+			if l[0] == '{':
+				ddesc = eval (desc)
+				flag = 'ADD'
+			else:
+				print desc
+				ddesc = eval (desc[2:])
+				if l[0] == '<':	flag = 'ADD'
+				if l[0] == '>':	flag = 'DEL'
+			region = ddesc.get('REGION_ID')
+			icateg = ddesc.get('CATEG_ID')
+			opid = ddesc.get('ID')
+	#		print	flag, region, icateg, opid
+			dpols = eval (geom)	#[:111]
+			for g in  dpols['coordinates']:
+				if dpols['type'] == 'MultiPolygon':
+					for s in g:	uptate_asnow (opid, icateg, region, s)
+				elif dpols['type'] == 'Polygon':
+					uptate_asnow (opid, icateg, region, g)
+				else:	print flag, region, icateg, opid, dpols['type']
+		else:
+			print l
+		l = f.readline()
+		j += 1
+#		if j > 11:	break
+		
+def	uptate_asnow (nopid, ncat, nreg, cpol):
+	""" Проверка наличия описателя полигона, обновление или создание	"""
+	itm = int (time.time())
+	sp = str (parce_coordinates (cpol))
+	phash = hash(sp)
+	query = "SELECT opid, idp, categ, region  FROM polygons WHERE phash = %s" % phash
+	try:
+		pr = asnow.get_row (query)
+		if pr:
+			opid, idp, categ, region = pr
+			if not (nopid == opid and ncat == categ and nreg == region):
+				query = "UPDATE polygons SET opid = %d, categ = %d, region =%d WHERE idp =%d" % (nopid, ncat, nreg, idp)
+				asnow.qexecute (query)
+			###	Проверить описаниев полигона в pmask
+			mcount = asnow.get_row("SELECT count(*) FROM pmask WHERE idp = %d" % idp)
+			if mcount[0] == 0:
+				init_pmask (idp, itm)
+			return
+		###	Добавить Новый полигон
+	#	print "NEW", nopid, ncat, nreg, phash
+		query = "INSERT INTO polygons (plgn, phash, tcreate, opid, categ, region) VALUES ('(%s)', %d, %d, %d, %d, %d); SELECT max(idp) FROM polygons;" % (sp[1:-1], phash, itm, nopid, ncat, nreg)
+		ridp = asnow.get_row (query)
+		init_pmask (ridp[0], itm)
+	except:
+		exc_type, exc_value = sys.exc_info()[:2]
+		print "EXCEPT uptate_asnow:", exc_type, str(exc_value).strip(), "\n\t", query
+
+import	p4_test as p4
+import	math
+
+def	init_pmask (idp, tcreate):
+	mask = p4.pmask()
+	query = "SELECT idp, region, categ, box(plgn) FROM polygons WHERE idp = %d" % idp
+#	print "init_pmask", query
+#	mask.is_debug = False
+	try:
+		row = asnow.get_row (query)
+		idp, region, categ, box = row
+		jbox =  eval(box)
+		max_p = mask.point2xy (jbox[0])
+		min_p = mask.point2xy (jbox[1])
+		if min_p == None or max_p == None:
+			print "\tERROR:\t", idp, region,  box, '\tmin_p', min_p, '\tmax_p', max_p
+			return
+		for jx in xrange(min_p[0], max_p[0]):
+			for jy in xrange(min_p[1], max_p[1]):
+				gx, gy = mask.xy2point((jx, jy))
+				query = "SELECT idp, region, categ FROM polygons WHERE '(%f, %f)' <@ plgn ORDER BY categ" % (gx, gy)
+				prows = asnow.get_rows(query)
+				if not prows:	continue
+
+				dmsk = mask._is_pmask ((gx,gy))
+				if not dmsk:
+					query = "INSERT INTO pmask (lon, lat, tcreate, idp, categ, region) VALUES (%d, %d, %d, %d, %d, %d)" % (jx, jy, tcreate, idp, categ, region)
+					print "\t", query, asnow.qexecute (query)
+					continue
+				if not dmsk['categ'] or dmsk['categ'] > categ:	# Приоритет категорий А, Б, ...	???
+					print '\tmask.set_pmask', mask.set_pmask((jx, jy), "idp = %d, tcreate = %d, categ = %s, region = %s" % (idp, tcreate, categ, region))
+					continue
+
+				'''
+				print	"###\t idp,  region,  categ", idp, region, categ
+				print	"\tmask._is_pmask ((gx,gy))", dmsk
+				for jr in prows:
+					if len(prows) == 1 and row[:3] == jr:
+						print '\tmask.set_pmask', mask.set_pmask((jx, jy), "tcreate = %d, categ = %s, region = %s" % (tcreate, categ, region)
+					else:
+						jidp, jregion, jcateg = jr
+						print	"\tjidp, jregion, jcateg", jidp, jregion, jcateg
+				'''
+		
+	except:
+		exc_type, exc_value = sys.exc_info()[:2]
+		print "EXCEPT init_pmask:", exc_type, str(exc_value).strip(), "\n\t", query
+
+#	sql/anti_snow.A.20180905.sql	БД с изменениями структуры opid categ
+#	SELECT count(*) FROM polygons WHERE idp IN (SELECT  DISTINCT idp FROM pmask);
+
+if __name__ == "__main__":
+#	get_base_json ()
+	fname = r'territory.json'
+	get_patch_json (fname)
+	get_patch_json (r'patch.json')
