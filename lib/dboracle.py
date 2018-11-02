@@ -105,11 +105,12 @@ def	parce_coordinates (pl, epsg_in = 'epsg:3857', epsg_out = 'epsg:4326', resln 
 def	send_lines (starttm = None):
 	asnow = dbtools.dbtools('host=127.0.0.1 dbname=anti_snow port=5432 user=smirnov')
 	if starttm and starttm > 0:
-		query = "SELECT id, tevent,  gosnum, quality, slines FROM to_send WHERE tevent > %d" % (starttm -360)
+		query = "SELECT id, tevent,  gosnum, quality, slines FROM to_send WHERE tevent > %d" % (starttm -180)
 	else:	query = "SELECT id, tevent,  gosnum, quality, slines FROM to_send LIMIT 3"
 	print query
 	rows = asnow.get_rows(query)
 	j = 0
+	tevent = 0
 	for r in rows:
 		rid, tevent,  gosnum, quality, sline = r
 		lines = eval (sline)
@@ -125,21 +126,6 @@ def	send_lines (starttm = None):
 			jlen += 3*len(lp)
 			jinf.append ('%d,2,1' % jlen)	#(3*len(lp) +1))
 			jord.append (str(lp)[1:-1].replace('(', '').replace(')', ''))
-			'''
-			jrid += 1
-		#	print jrid, '\t', str(lp)
-		#	print '\t', str(lp)[1:-1].replace('(', '').replace(')', '')
-	### BASE 	query = """INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK (id, tevent, color, GEOMETRY) VALUES (%d, %d, %s, MDSYS.SDO_GEOMETRY(2002, NULL,NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1,2,1), MDSYS.SDO_ORDINATE_ARRAY (%s)))""" % (jrid, tevent, quality, str(lp)[1:-1].replace('(', '').replace(')', ''))
-	### jrid
-			query = """INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK (id, tevent, color, GEOMETRY) VALUES (%d, %d, %s, MDSYS.SDO_GEOMETRY(3002, 3857,NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1,2,1), MDSYS.SDO_ORDINATE_ARRAY (%s)))""" % (jrid, tevent, quality, str(lp)[1:-1].replace('(', '').replace(')', ''))
-	#		query = """INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK (tevent, color, GEOMETRY) VALUES (%d, %s, MDSYS.SDO_GEOMETRY(3002, 3857, NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1,2,1), MDSYS.SDO_ORDINATE_ARRAY (%s)))""" % (tevent, quality, str(lp)[1:-1].replace('(', '').replace(')', ''))
-			print query
-			res = dbo.execute (query)
-			if res:	jres += 1
-			else:	pass	#	print "ERR\t", query
-		if jres == len(lines):	print "DELETE", rid, asnow.qexecute ("DELETE FROM to_send WHERE id = %d" % rid)
-		print '-'*33
-			'''
 		info = ', '.join(jinf[:len(jord)])
 		orditate = ',\n'.join(jord)
 		query = """INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK (id, tevent, color, IS_ACTUAL, GEOMETRY) VALUES (%d, %d, %s, 1, MDSYS.SDO_GEOMETRY(3002, 3857,NULL, MDSYS.SDO_ELEM_INFO_ARRAY(%s), MDSYS.SDO_ORDINATE_ARRAY (\n%s)))""" % (
@@ -150,15 +136,10 @@ def	send_lines (starttm = None):
 		print "DELETE", rid, asnow.qexecute ("DELETE FROM to_send WHERE id = %d" % rid)
 #		if j > 3:	break
 		j += 1
-	query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK SET IS_ACTUAL = 0 WHERE tevent < %d" % (tevent - 4*3600)
-	print	query, dbo.execute (query)
+	if tevent > 0:
+		query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK SET IS_ACTUAL = 0 WHERE tevent < %d" % (tevent - 4*3600)
+		print	query, dbo.execute (query)
 """
-connection = cx_Oracle.Connection("user/pw@tns")
-typeObj = connection.gettype("SDO_GEOMETRY")
-cursor = connection.cursor()
-cursor.execute(" select Geometry from TestGeometry where IntCol = 1")
-obj, = cursor.fetchone()
-
 Марина
 4       [[[43.983135, 56.308678], [43.983223, 56.308998], [43.983902, 56.30986]], [[43.983273, 56.310425], [43.981812, 56.310699]], [[43.981567, 56.311954], [43.981636, 56.312218]], [[43.983513, 56.316311], [43.983246, 56.316727]]]
 INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK (id, color, GEOMETRY) VALUES (5400301, 1, MDSYS.SDO_GEOMETRY(2002, NULL,NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1,2,1),
@@ -181,32 +162,8 @@ INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK(ID,GEOMETRY)
 	))) 
 """
 
-def ObjectRepr(obj):
-	returnValue = []
-	if obj.type.iscollection:
-		for value in obj.aslist():
-			if isinstance(value, cx_Oracle.Object):
-				value = ObjectRepr(value)
-				returnValue.append(value)
-			else:
-				returnValue = {}
-				for attr in obj.type.attributes:
-					value = getattr(obj, attr.name)
-			if value is None:
-					continue
-			elif isinstance(value, cx_Oracle.Object):
-				value = ObjectRepr(value)
-				returnValue[attr.name] = value
-		print value
-	return returnValue
-
-"""
-print("JSON:", json.dumps(ObjectRepr(obj)))
-"""
-
 def	test (conn, tname = 'NNOVGOROD_UAG.NS_UBORKA_AVTOZ'):
 	print	'tname:\t', tname
-#	print help(cx_Oracle.connect)
 	cursor = conn.cursor()
 #	query = 'SELECT sdo_util.to_wkbgeometry(geometry) FROM NNOVGOROD3785_UAG.%s ' % tname
 #	query = "SELECT %s.ora2geojson.sdo2geojson('select * from udc_uborka_avtoz',ROWID, geometry) FROM %s.udc_uborka_avtoz" % (prefix, prefix)
@@ -217,12 +174,6 @@ def	test (conn, tname = 'NNOVGOROD_UAG.NS_UBORKA_AVTOZ'):
 #	cursor.execute('SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_SNEG')
 	cursor.execute(query)
 	columns = [i[0].lower() for i in cursor.description]
-	'''
-	obj, = cursor.fetchone()
-	print 'obj.type.iscollection:', obj.type.iscollection
-	print("JSON:", json.dumps(ObjectRepr(obj)))
-	return
-	'''
 	j = 0
 	for r in cursor.fetchall():
 		for c in r:
@@ -237,7 +188,7 @@ def	test (conn, tname = 'NNOVGOROD_UAG.NS_UBORKA_AVTOZ'):
 		j += 1
 		if j > LIMIT:	break
 	cursor.close()
-
+'''
 def	get_table (conn, tname, scols = None):
 
 	if scols:
@@ -261,7 +212,7 @@ def	get_table (conn, tname, scols = None):
 	cursor.close()
 	conn.commit()
 	print "#"*22, tname, j
-
+'''
 	
 def	get_geometry (tname, scols = None):
 	print "get_geometry:", tname
@@ -366,6 +317,43 @@ def	send_autos ():
 	print	"send_autos", "#"*33
 	'''
 
+def	check_tsnow (dbo = None):
+	""" Оперативный контроль состояния транспорта	"""
+	if not dbo:	dbo = dboracle()
+	dbrec = dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
+
+	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_TEHNIKA "
+	rows = dbo.get_rows (query)
+	for c in dbo.desc:	print '\t', c,
+	print
+	for r in rows:
+	#	for c in r:	print '\t', c,
+		orid = r[dbo.desc.index('ID')]
+		categ = r[dbo.desc.index('CATEG')]
+		sgn = r[dbo.desc.index('NOMER')].strip().replace(' ', '') +'%' 
+		marka = r[dbo.desc.index('MARKA')].strip()
+		query = "SELECT * FROM vrecv_ts WHERE gosnum LIKE '%s'" % sgn 
+		trows = dbrec.get_rows(query)
+		if trows and len(trows) == 1:
+			gosnum = trows[0][dbrec.desc.index('gosnum')]
+			if gosnum == sgn[:-1]:
+				if int(categ) != int(trows[0][dbrec.desc.index('stat_ts')]):
+					query = "UPDATE recv_ts SET rem = '%s', stat_ts = %s WHERE gosnum = '%s'" % (marka, categ, gosnum)
+					print 'dbrec\t', query, dbrec.qexecute(query)
+			else:
+				query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_TEHNIKA SET NOMER = '%s' WHERE id = %s" % (gosnum, orid)
+				qres = dbo.execute(query)
+				print '\t', query
+				if qres:
+					query = "UPDATE recv_ts SET rem = '%s', stat_ts = %s WHERE gosnum = '%s'" % (marka, categ, gosnum)
+					print 'dbrec\t', query, dbrec.qexecute(query)
+		else:
+			gosnum = 'None'
+			print	"\t>>\t%s \t%s \t%s \t" % (sgn, marka, categ), gosnum, (gosnum == sgn[:-1])
+	#	print	"\t>>\t", r[dbo.desc.index('CATEG')], r[dbo.desc.index('NOMER')].strip().replace(' ', ''), r[dbo.desc.index('MARKA')].strip()
+	#	print 
+	return
+
 LIMIT = 5
 prefix = 'NNOVGOROD3785_UAG'
 gtables = [ 'V_PORTAL2_SAD_AVTOZ','V_PORTAL2_SAD_KAN','V_PORTAL2_SAD_LEN','V_PORTAL2_SAD_MSK','V_PORTAL2_SAD_NIG','V_PORTAL2_SAD_PRIO','V_PORTAL2_SAD_SORM','V_PORTAL2_SAD_SOV' ]
@@ -376,7 +364,8 @@ def	otest ():
 	print "otest"
 	dbo = dboracle()
 	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_SNEG"	# Флаг начала уборки ROWID
-	print   "Флаги начала уборки:\n\t", dbo.get_rows (query)
+	print   "Флаги начала уборки:\n\t", dbo.get_rows (query), "\n"
+
 	query = "SELECT count(*) FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK WHERE IS_ACTUAL >1"
 	print query
 	rows = dbo.get_rows (query)
@@ -391,10 +380,11 @@ def	outhelp():
 	print	"""
 	Утилита crontab
 	Обмен данными с ИС МКУ ГЦГиА (БД Oracle)
-	-g	Читать данные о территориях (полигонах) уборки снега
+	-g	Читать данные о территориях (полигонах) уборки снега	Oracle:	V_PORTAL2_SAD_XXXX
 	-s	Передача данных о ходе уборки снега 		Oracle: NS_UBORKA_SAD_TREK
 	-a	Передача данных о текущем местоположении ТС	Oracle: NS_UBORKA_SAD_PLOW
 	-d	Очистить Oracle:  NS_UBORKA_SAD_TREK
+	-c	Проверка статуса ТС 	Oracle:	NS_UBORKA_TEHNIKA
 	-h	Справка
 	-t	Тестирование обмена с БД Oracle 
 	"""
@@ -408,14 +398,16 @@ if __name__ == "__main__":
 	flasttm = r'/tmp/NS_UBORKA_SAD_TREK.lasttime'
 	foutjsn = r'/home/smirnov/MyTests/Wialon/data/territory-%s.json' % time.strftime("%Y%m%d", time.localtime(sttmr))
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'hdsagt')
+		optlist, args = getopt.getopt(sys.argv[1:], 'hdsagtc')
 		for o in optlist:
 			if o[0] == '-h':	outhelp()
 			if o[0] == '-g':	sfunc = "get_territory"
 			if o[0] == '-s':	sfunc = "send_lines"
 			if o[0] == '-a':	sfunc = "send_autos"
 			if o[0] == '-d':	sfunc = "del_trek"
+			if o[0] == '-c':	sfunc =	"check_tsnow"
 			if o[0] == '-t':	sfunc = otest()
+
 		dbo = dboracle()
 		print "\t", sfunc
 
@@ -444,6 +436,8 @@ if __name__ == "__main__":
 		elif sfunc == "del_trek":
 			query = "DELETE FROM %s.%s" % (prefix, 'NS_UBORKA_SAD_TREK')
 			print query, dbo.execute (query)
+		elif sfunc == "check_tsnow":
+			check_tsnow ()
 		else:	outhelp()
 	except	SystemExit:	pass
 	except  getopt.GetoptError:	outhelp()

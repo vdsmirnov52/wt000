@@ -184,35 +184,41 @@ def	get_patch_json (fname):
 	f = open(fname, 'r')
 	l = f.readline()
 	j = 0
-	while l:
-	#	print l[:100]
-		if l[0] in "<>{":
-			desc, geom = l.strip().split('@')
-			if l[0] == '{':
-				ddesc = eval (desc)
-				flag = 'ADD'
+	try:
+		while l:
+		#	print l[:100]
+			if l[0] in "<>{":
+				desc, geom = l.strip().split('@')
+				if l[0] == '{':
+					ddesc = eval (desc)
+					flag = 'ADD'
+				else:
+					print desc
+					ddesc = eval (desc[2:])
+					if l[0] == '<':	flag = 'ADD'
+					if l[0] == '>':	flag = 'DEL'
+				region = ddesc.get('REGION_ID')
+				icateg = ddesc.get('CATEG_ID')
+				opid = ddesc.get('ID')
+		#		print	flag, region, icateg, opid
+				dpols = eval (geom)	#[:111]
+				for g in  dpols['coordinates']:
+					if dpols['type'] == 'MultiPolygon':
+						for s in g:	uptate_asnow (opid, icateg, region, s)
+					elif dpols['type'] == 'Polygon':
+						uptate_asnow (opid, icateg, region, g)
+					else:	print flag, region, icateg, opid, dpols['type']
+				j += 1
 			else:
-				print desc
-				ddesc = eval (desc[2:])
-				if l[0] == '<':	flag = 'ADD'
-				if l[0] == '>':	flag = 'DEL'
-			region = ddesc.get('REGION_ID')
-			icateg = ddesc.get('CATEG_ID')
-			opid = ddesc.get('ID')
-	#		print	flag, region, icateg, opid
-			dpols = eval (geom)	#[:111]
-			for g in  dpols['coordinates']:
-				if dpols['type'] == 'MultiPolygon':
-					for s in g:	uptate_asnow (opid, icateg, region, s)
-				elif dpols['type'] == 'Polygon':
-					uptate_asnow (opid, icateg, region, g)
-				else:	print flag, region, icateg, opid, dpols['type']
-		else:
-			print l
-		l = f.readline()
-		j += 1
-#		if j > 11:	break
-		
+				print l
+			l = f.readline()
+	#		if j > 11:	break
+		return	j
+	except:
+		exc_type, exc_value = sys.exc_info()[:2]
+		print "EXCEPT get_patch_json:", exc_type, str(exc_value).strip(), "\n\t", query
+		return	False
+
 def	uptate_asnow (nopid, ncat, nreg, cpol):
 	""" Проверка наличия описателя полигона, обновление или создание	"""
 	itm = int (time.time())
@@ -232,7 +238,7 @@ def	uptate_asnow (nopid, ncat, nreg, cpol):
 				init_pmask (idp, itm)
 			return
 		###	Добавить Новый полигон
-	#	print "NEW", nopid, ncat, nreg, phash
+		print "NEW", nopid, ncat, nreg, phash
 		query = "INSERT INTO polygons (plgn, phash, tcreate, opid, categ, region) VALUES ('(%s)', %d, %d, %d, %d, %d); SELECT max(idp) FROM polygons;" % (sp[1:-1], phash, itm, nopid, ncat, nreg)
 		ridp = asnow.get_row (query)
 		init_pmask (ridp[0], itm)
@@ -291,8 +297,30 @@ def	init_pmask (idp, tcreate):
 #	sql/anti_snow.A.20180905.sql	БД с изменениями структуры opid categ
 #	SELECT count(*) FROM polygons WHERE idp IN (SELECT  DISTINCT idp FROM pmask);
 
+#	territory.json		20181102-territory.json
+#	territory-20181102.json	territory.json
+
 if __name__ == "__main__":
 #	get_base_json ()
-	fname = r'territory.json'
-	get_patch_json (fname)
-	get_patch_json (r'patch.json')
+#	fname = r'territory.json'
+	fname = r'/home/smirnov/MyTests/Wialon/data/patch.json'
+	fdir = r'/home/smirnov/MyTests/Wialon/data'
+	fpatch = 'patch.json'
+	fname = os.path.join (fdir, 'patch.json')
+	if os.path.isfile(fname):
+		jres = get_patch_json (fname)
+		print "get_patch_json jres:", jres, fname
+		if jres and jres > 0:
+			dmark = time.strftime("%Y%m%d", time.localtime(time.time()))
+			npatch = os.path.join (fdir, 'patch-%s.json' % dmark)
+			cmd = [
+			"mv %s %s" % (fname, os.path.join (fdir, 'patch-%s.json' % dmark)),
+			"mv %s %s" % (os.path.join (fdir, 'territory.json'),  os.path.join (fdir, '%s-territory.json' % dmark)),
+			"mv %s %s" % (os.path.join (fdir, 'territory-%s.json' % dmark),       os.path.join (fdir, 'territory.json'))
+			]
+			print "\n".join(cmd)
+			os.system ("\n".join(cmd))
+		#	os.system ("mv %s /home/smirnov/MyTests/Wialon/data/patch-%s.json" % (fname, dmark))
+	else:
+		print "Отсутствует файл", fname
+#	get_patch_json (r'patch.json')

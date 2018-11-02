@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import	sys, os, time
+import	math
 
 LIBRARY_DIR = r"/home/smirnov/WT/lib"	# Путь к рабочей директории (библиотеке)
 sys.path.insert(0, LIBRARY_DIR)
@@ -81,8 +82,6 @@ def	parce_coordinates (pl, epsg_in = 'epsg:3857', epsg_out = 'epsg:4326'):
 	#		print '\t', ppl, pout
 	return	pouts
 	print '#'*22, pouts
-
-import	math
 
 class	pmask:
 	Rz = (6378245.0+6356863.019)/2	# Радиус земли (м)
