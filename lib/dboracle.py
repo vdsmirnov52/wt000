@@ -137,7 +137,7 @@ def	send_lines (starttm = None):
 #		if j > 3:	break
 		j += 1
 	if tevent > 0:
-		query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK SET IS_ACTUAL = 0 WHERE tevent < %d" % (tevent - 4*3600)
+		query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK SET IS_ACTUAL = 0 WHERE IS_ACTUAL > 0 AND tevent < %d" % (tevent - 4*3600)
 		print	query, dbo.execute (query)
 """
 Марина
@@ -278,7 +278,9 @@ def	send_autos ():
 	for r in rows:
 		list_autos[r[0]] = r[1]
 #	print list_autos
-	query = "SELECT * FROM vlast_pos WHERE x > 0 ORDER BY t"	### Список ИНН организаци участвующих в уборке снега 
+#	query = "SELECT * FROM vlast_pos WHERE x > 0 ORDER BY t"
+	### Список ИНН организаци участвующих в уборке снега 
+	query = "SELECT * FROM vlast_pos WHERE x > 0 AND tinn IN (SELECT inn FROM org_desc WHERE bm_ssys = 131072 AND stat > 0) ORDER BY t"
 	rrows = dbrec.get_rows (query)
 	d = dbrec.desc
 #	print d
@@ -292,61 +294,64 @@ def	send_autos ():
 		except RuntimeError:	continue
 #		print x,y, "\t=>", X,Y
 		gpoint = "MDSYS.SDO_GEOMETRY( 3001, 3857, MDSYS.SDO_POINT_TYPE(%s, %s, NULL), NULL, NULL)" % (X,Y)
+		if r[d.index('rem')]:
+			marka = r[d.index('rem')]
+		else:	marka = r[d.index('marka')]
 		if gosnum in list_autos.keys():
 		#	print "UPDATE"
 			if r[d.index('t')] <= list_autos[gosnum]:	continue
-			query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW SET tevent = %s, geometry = %s WHERE gos_nomer = '%s'" % (r[d.index('t')], gpoint, gosnum)
+			query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW SET tevent = %s, geometry = %s, marka='%s' WHERE gos_nomer = '%s'" % (r[d.index('t')], gpoint, marka, gosnum)
+		#	query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW SET tevent = %s, geometry = %s WHERE gos_nomer = '%s'" % (r[d.index('t')], gpoint, gosnum)
 			print query, dbo.execute(query)
 		else:
 		#	print "INSERT"
 			query = "INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW (tevent, geometry, gos_nomer, marka, inn, name_obj) VALUES (%s, %s, '%s', '%s', '%s', '%s')" % (
-			r[d.index('t')], gpoint, gosnum, r[d.index('marka')], r[d.index('tinn')], r[d.index('bname')])
+			r[d.index('t')], gpoint, gosnum, marka, r[d.index('tinn')], r[d.index('bname')])
+		#	r[d.index('t')], gpoint, gosnum, r[d.index('marka')], r[d.index('tinn')], r[d.index('bname')])
 			print query, dbo.execute(query)
  
 	query = "DELETE FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE ID < 50"
 	print query, dbo.execute(query)
-	'''
-#	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW"
-	query = "SELECT %s.ora2geojson.sdo2geojson('select * from %s',ROWID, geometry) AS GEOMETRY FROM %s.%s ORDER BY ID" % (prefix, 'NS_UBORKA_SAD_PLOW', prefix, 'NS_UBORKA_SAD_PLOW')
-	print "\n\t", query
-	rows = dbo.get_rows (query)
-	print dbo.desc
-	for r in rows:
-		for v in r:	print "\t", v,
-		print
-	print	"send_autos", "#"*33
-	'''
+#	print	"send_autos", "#"*33
+
 
 def	check_tsnow (dbo = None):
 	""" Оперативный контроль состояния транспорта	"""
 	if not dbo:	dbo = dboracle()
 	dbrec = dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
 
-	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_TEHNIKA "
+#	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_TEHNIKA "
+	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_TEH "
 	rows = dbo.get_rows (query)
 	for c in dbo.desc:	print '\t', c,
-	print
+	print query, dbo.desc
+	print dbo.curs.description
 	for r in rows:
 	#	for c in r:	print '\t', c,
 		orid = r[dbo.desc.index('ID')]
 		categ = r[dbo.desc.index('CATEG')]
 		sgn = r[dbo.desc.index('NOMER')].strip().replace(' ', '') +'%' 
-		marka = r[dbo.desc.index('MARKA')].strip()
+		if 'MARKA' in dbo.desc and r[dbo.desc.index('MARKA')]:
+			marka = "'%s'" % r[dbo.desc.index('MARKA')].strip()
+		else:	marka = 'NULL'
 		query = "SELECT * FROM vrecv_ts WHERE gosnum LIKE '%s'" % sgn 
 		trows = dbrec.get_rows(query)
+		d = dbrec.desc
 		if trows and len(trows) == 1:
 			gosnum = trows[0][dbrec.desc.index('gosnum')]
 			if gosnum == sgn[:-1]:
-				if int(categ) != int(trows[0][dbrec.desc.index('stat_ts')]):
-					query = "UPDATE recv_ts SET rem = '%s', stat_ts = %s WHERE gosnum = '%s'" % (marka, categ, gosnum)
+				if int(categ) != int(trows[0][d.index('stat_ts')]) or (marka != 'NULL' and trows[0][d.index('rem')] != marka[1:-1]):
+					query = "UPDATE recv_ts SET rem = %s, stat_ts = %s WHERE gosnum = '%s'" % (marka, categ, gosnum)
 					print 'dbrec\t', query, dbrec.qexecute(query)
 			else:
 				query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_TEHNIKA SET NOMER = '%s' WHERE id = %s" % (gosnum, orid)
-				qres = dbo.execute(query)
+			#	qres = dbo.execute(query)
 				print '\t', query
+				'''
 				if qres:
 					query = "UPDATE recv_ts SET rem = '%s', stat_ts = %s WHERE gosnum = '%s'" % (marka, categ, gosnum)
 					print 'dbrec\t', query, dbrec.qexecute(query)
+				'''
 		else:
 			gosnum = 'None'
 			print	"\t>>\t%s \t%s \t%s \t" % (sgn, marka, categ), gosnum, (gosnum == sgn[:-1])
@@ -366,14 +371,27 @@ def	otest ():
 	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_SNEG"	# Флаг начала уборки ROWID
 	print   "Флаги начала уборки:\n\t", dbo.get_rows (query), "\n"
 
-	query = "SELECT count(*) FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK WHERE IS_ACTUAL >1"
+#	query = "SELECT count(*) FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK WHERE IS_ACTUAL >1"
+#	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK ORDER BY TEVENT"
+	query = """DELETE FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE NAME_OBJ = 'МП"Сергачский автобус"'"""
+#	print query, dbo.execute (query)
+#	query = """SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE NAME_OBJ = 'МП"Сергачский автобус"'"""
+	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW"	# ORDER BY TEVENT"
 	print query
 	rows = dbo.get_rows (query)
 	print dbo.desc
-	print rows
+#	print rows
 	if rows:
 		print	"len(rows):\t", len(rows), dbo.desc
-		print	"rows[0]:\t", 	rows[0]
+#		print	"rows[0]:\t", 	rows[0]
+		for r in rows:
+			for k in dbo.desc:
+				if k == 'GEOMETRY':	continue
+				if k == 'TEVENT':
+					print time.strftime("\t%T %d.%m.%Y", time.localtime(sttmr)),
+					continue
+				print	'\t', r[dbo.desc.index(k)],
+			print
 	outhelp()
 
 def	outhelp():

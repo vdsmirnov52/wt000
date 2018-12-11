@@ -16,10 +16,15 @@ import	dbtools
 dbrec =	dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
 
 def	init_mask ():
+	""" АнтиСнег	"""
+	mask = p4.pmask()
 #	print 'init_mask', mask.get_config()
 	itm = int (time.time())
 #	print	'\t t > %d ORDER BY idd, t DESC' % (itm - 3600)
-	res = dbrec.get_table('vdata_pos', 't > %d ORDER BY idd, t DESC' % (itm - 360))
+	query = "DELETE FROM data_pos WHERE t < %d;" % (itm - 31*24*3600)
+	print query, dbrec.qexecute(query)
+#	res = dbrec.get_table('vdata_pos', 't > %d ORDER BY idd, t DESC' % (itm - 360))
+	res = dbrec.get_table('vdata_pos', 't > %d AND tinn IN (SELECT inn FROM org_desc WHERE bm_ssys = 131072 AND stat > 0) ORDER BY idd, t DESC' % (itm - 360))
 	if not res:	return
 	dx = mask.lnx/mask.des
 	dy = mask.lny/mask.des
@@ -40,6 +45,8 @@ def	init_mask ():
 	old_xy = (0.0, 0.0)
 	seend_lines = []
 	jline = []
+	sspeed = 0.0	# сумма скоростей в треке
+	jsspeed = 1	# точек в треке
 	for r in res[1]:
 		snow_lines = {}
 		gx = float (r[d.index('x')])
@@ -51,13 +58,15 @@ def	init_mask ():
 			sres = mask.check_line (r[d.index('t')], (gx_old, gy_old), (gx, gy), 0, r[d.index('cr')], r[d.index('gosnum')])
 			if sres:
 			#	itm, gosnum, sstat = sres[:3]
-				print 'sres:\t', sres
+			#	print 'sres:\t', sres
 				itm, gosnum, sstat, old_gxy, gxy, categ, bcurs = sres
 				speed = mask.gps_speed (gx_old-gx, gy_old-gy, old_t-r[d.index('t')])
-				print	"\tРасчет скорости", speed
 	#			print itm, gosnum, "[%s]" % old_gosnum, sstat, sres[3], sres[4]
 				if gosnum == old_gosnum:
-					print itm, gosnum, sstat, sres[3:], old_xy,  sres[3], (old_xy == sres[3])
+					sspeed += speed	# (sspeed + speed)/2
+					jsspeed += 1
+				#	print	"\tРасчет скорости", speed, sspeed, gosnum
+				#	print itm, gosnum, sstat, sres[3:], old_xy,  sres[3], (old_xy == sres[3])
 					if old_xy == sres[3]:
 						jline.append(sres[4])
 					else:
@@ -65,6 +74,8 @@ def	init_mask ():
 						jline = [sres[3], sres[4]]
 					old_xy = sres[4]
 				else:
+					if old_gosnum:
+						print	"\t\tРасчет скорости", sspeed/jsspeed, jsspeed, old_gosnum
 					if old_gosnum and seend_lines:
 						# Save send Line
 						query = "INSERT INTO to_send (tevent, gosnum, quality, slines) VALUES (%d, '%s', '%s', '%s')" % (itm, old_gosnum, old_stat, str(seend_lines))
@@ -72,6 +83,8 @@ def	init_mask ():
 						mask.sql_query (query)
 					#	print ">>\t", query, mask.sql_query (query)
 						seend_lines = []
+					sspeed = speed
+					jsspeed = 1
 					jline = [sres[3], sres[4]]
 					old_gosnum = gosnum
 					old_stat = sstat
@@ -91,6 +104,7 @@ def	init_mask ():
 	if is_snow:
 	#	print "seend_lines:", old_gosnum, seend_lines
 		if seend_lines:
+			print   "\t\tРасчет скорости", sspeed/jsspeed
 			query = "INSERT INTO to_send (tevent, gosnum, quality, slines) VALUES (%d, '%s', '%s', '%s')" % (itm, old_gosnum, old_stat, str(seend_lines))
 			mask.sql_query (query)
 		#	print "S>\t", query, mask.sql_query (query)
@@ -108,7 +122,7 @@ if __name__ == "__main__":
 	print	p4.wgs2merc ([37.617778,55.751667])
 	print   p4.lonlat2merc (37.617778,89.0)
 	'''
-	mask = p4.pmask()
+#	mask = p4.pmask()
 	init_mask ()
 	'''
 	for j in xrange(5):

@@ -204,9 +204,9 @@ def	get_patch_json (fname):
 				dpols = eval (geom)	#[:111]
 				for g in  dpols['coordinates']:
 					if dpols['type'] == 'MultiPolygon':
-						for s in g:	uptate_asnow (opid, icateg, region, s)
+						for s in g:	uptate_asnow (flag, opid, icateg, region, s)
 					elif dpols['type'] == 'Polygon':
-						uptate_asnow (opid, icateg, region, g)
+						uptate_asnow (flag, opid, icateg, region, g)
 					else:	print flag, region, icateg, opid, dpols['type']
 				j += 1
 			else:
@@ -219,7 +219,7 @@ def	get_patch_json (fname):
 		print "EXCEPT get_patch_json:", exc_type, str(exc_value).strip(), "\n\t", query
 		return	False
 
-def	uptate_asnow (nopid, ncat, nreg, cpol):
+def	uptate_asnow (flag, nopid, ncat, nreg, cpol):
 	""" Проверка наличия описателя полигона, обновление или создание	"""
 	itm = int (time.time())
 	sp = str (parce_coordinates (cpol))
@@ -229,6 +229,10 @@ def	uptate_asnow (nopid, ncat, nreg, cpol):
 		pr = asnow.get_row (query)
 		if pr:
 			opid, idp, categ, region = pr
+			if flag == 'DEL' and opid == nopid:
+				query = "DELETE FROM polygons WHERE opid = %s AND phash = %s" % (nopid, phash)
+				print 'flag\t', flag, querya, asnow.qexecute (query)
+				return
 			if not (nopid == opid and ncat == categ and nreg == region):
 				query = "UPDATE polygons SET opid = %d, categ = %d, region =%d WHERE idp =%d" % (nopid, ncat, nreg, idp)
 				asnow.qexecute (query)
@@ -236,6 +240,9 @@ def	uptate_asnow (nopid, ncat, nreg, cpol):
 			mcount = asnow.get_row("SELECT count(*) FROM pmask WHERE idp = %d" % idp)
 			if mcount[0] == 0:
 				init_pmask (idp, itm)
+			return
+		if flag != 'ADD':
+			print "W flag\t", flag, nopid, ncat, nreg, cpol
 			return
 		###	Добавить Новый полигон
 		print "NEW", nopid, ncat, nreg, phash
