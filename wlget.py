@@ -523,6 +523,7 @@ def	outhelp():
 	print "outhelp", sys.argv
 	print """
 	-i	Поиск и добавление активного оборудования (hwType = EGTS)
+	-a	Добавить автомобили ( create_autos ??? update agro_ts set inn = 5248037326 WHERE inn IS NULL; )
 	-t	Test (проверка наличия соединения с сервером)
 	-U	Список пользователей 
 	-u	описания для тип [ avl_unit | avl_unit_group | avl_resource ]
