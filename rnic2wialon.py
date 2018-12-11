@@ -330,10 +330,14 @@ def	autos_inn ():
 
 		gosnum = item['nm'].encode('UTF-8').strip()
 		reg_plate = get_pflds (item['pflds'], 'registration_plate')
+		if reg_plate and reg_plate != '':
+			gnum = reg_plate
+		else:	gnum = gosnum
+	#	print ">>>", gosnum, reg_plate
 		if not ((item.has_key('aflds') and item['aflds']) or item['flds']):
 			if FL_fix_pos and item.has_key('pos') and item['pos']:
 			#	fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'])
-				fix_pos(itemId, item['uid'].encode('UTF-8'), gosnum, item['pos'])
+				fix_pos(itemId, item['uid'].encode('UTF-8'), gnum, item['pos'])
 			continue
 		j += 1
 #		if j > 11:	break
@@ -347,7 +351,7 @@ def	autos_inn ():
 
 		if FL_fix_pos and item.has_key('pos') and item['pos']:
 		#	fix_pos(itemId, item['uid'].encode('UTF-8'), item['nm'].encode('UTF-8'), item['pos'], fres)
-			fix_pos(itemId, item['uid'].encode('UTF-8'), gosnum, item['pos'], fres)
+			fix_pos(itemId, item['uid'].encode('UTF-8'), gnum, item['pos'], fres)
 
 		if chres:
 			vals = chres.get('fres')
