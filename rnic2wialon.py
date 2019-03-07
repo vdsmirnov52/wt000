@@ -48,16 +48,20 @@ def	check_fflags (fl_name, flags, sid, itemId):
 			update[k] = flags[k]
 			continue
 		if flags[k]['n'] in marks_inn:		# [u'INN', u'inn', u'ИНН', u'oinn']:
-			if not len(flags[k]['v']) in [10, 12]:
-				delete.append(flags[k]['id'])
-			elif inn and inn[0]['INN'] == flags[k]['v']:
-				delete.append(flags[k]['id'])
-			else:
-				inn = (flags[k]['id'], flags[k])
-				if flags[k]['n'] != u'INN':
-					flags[k]['n'] = u'INN'
-					update[k] = flags[k]
+			try:
+				if not len(flags[k]['v']) in [10, 12]:
+					delete.append(flags[k]['id'])
+				elif inn and inn[0]['INN'] == flags[k]['v']:
+					delete.append(flags[k]['id'])
+				else:
+					inn = (flags[k]['id'], flags[k])
+					if flags[k]['n'] != u'INN':
+						flags[k]['n'] = u'INN'
+						update[k] = flags[k]
+			except:
+				print "\t\x1b[1;33mexcept:\t", inn, flags[k], "\x1b[0m"
 			continue
+
 	if delete:
 	#	print "delete", delete
 		if fl_name == 'flds':
@@ -248,10 +252,12 @@ def	set_inn_by_autos (sid, itemIds, inn):
 		if r.has_key('aflds'):
 			k += len(r['aflds'])
 			jinn = search_inn ('aflds', r['aflds'])
-			if jinn and jinn == inn:	continue
-	
-	
-		print '\t', iid, gosnum, inn, jinn
+			if jinn and jinn == inn:
+				continue
+			else:	
+				print '\x1b[1;33mWAR\x1b[0m\t', iid, gosnum, inn, jinn, '\titemIds:', itemIds 
+				continue
+		print 'UDT\t', iid, gosnum, inn, jinn
 		data = {'sid': sid, 'svc': 'item/update_admin_field', 'params':{"itemId": int(iid), 'id': 0, "n": 'INN', "v": inn.encode('UTF-8'), "callMode":"create"}}
 		b, upres = twlp.requesr (data, host = HOST)
 		if not b:

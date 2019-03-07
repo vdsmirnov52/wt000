@@ -25,4 +25,3 @@ http://wialon.rnc52.ru/login.html?svc_error=7&access_token=1d5a4a6ab2bde440204e6
 
 /home/smirnov/python/env/data-loader-egts/data_loader.py	# имитатор потока EGTS
 
-rsync  -avz -e 'ssh -p 21962 -i /home/smirnov/.ssh/authorized_keys' /tmp/deltaSec smirnov@212.193.103.9:/tmp/deltaSec
