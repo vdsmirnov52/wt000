@@ -122,9 +122,9 @@ def	send_post (pdict = None, pfile = None, host = None):
 	return json.loads(res.read())
 
 DEBUG = False
-URL =	r"http://test-wialon.rnc52.ru/wialon/ajax.html"
+URL =	r"http://wialon.rnc52.ru/wialon/ajax.html"
 usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
-	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af83FC08035B2DE5C5646942B1900BE28862CCE8BEC",
+	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af88D19DFFEDD8F1FBCEAFCDAEEB21419C1B4C7A875",
 	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c272899BB584F98F199F951746467AA85947F7A9F5",
 	}
 
@@ -146,26 +146,64 @@ def	ppp (obj, label = None):
 	else:	pass
 	#	print "Type", type(obj)
 
+st = [
+	{'i': 0, 'p': '', 'id': 20421},
+	{'i': 1, 'p': 'q{~vI_c{kG@@^cBRaBCyAIu@QeAIY}@}D?I_@sBO{@_@}AKo@yAeHCK}@wEcBqIUyA\\s@N_@D_@d@uABB', 'id': 20422}, 
+	{'i': 2, 'p': 'we_wIud}kGCCH_@bAgDrAaFJ_@Nu@^iAr@wBrAoDb@y@tCsE|@gBlBiCnEcEhAgAlFuD^Y`Ak@AG', 'id': 20423}, 
+	{'i': 3, 'p': 'g|}vI{`_lG@F@AvAiAz@u@t@y@`CgDZo@fAiBd@e@lA}@jByAxBwBFG??', 'id': 20433}, 
+	{'i': 4, 'p': 'qc}vIoz_lG??xA}ATY~@_A\\e@dDqDzFaH~@_Bx@cB|@_C~D_MZcA?A', 'id': 20432}, 
+	{'i': 5, 'p': 'mc|vIkjalG?@Le@l@cB~BsHN_@n@sAx@mAh@o@RStAeB|AcBBE?D', 'id': 20431}, 
+	{'i': 6, 'p': 'ar{vIwfblG?EPODI|CiDxD{El@u@^y@^m@Xo@l@oBTy@N}@f@uBAA', 'id': 20430}, 
+	{'i': 7, 'p': 'o~zvIkeclG@@Ly@jFqU~@_DbCeHDW|@cC@D', 'id': 20424}, 
+	{'i': 8, 'p': 'inzvIqpdlGAE`@iA|@sBxAaFbBgG^_AXc@^Yb@Kd@IbCEnAMx@a@n@g@UmEC|AKdAOl@_@n@STAE', 'id': 20429}, 
+	{'i': 9, 'p': 'wyyvImkelG@Dx@a@n@g@k@}Ii@eHE_@BA', 'id': 20428}, 
+	{'i': 10, 'p': 'cyyvIwbflGC@GoA{AuSIy@Eu@A?', 'id': 20427}, 
+	{'i': 11, 'p': '}|yvIk}flG@?i@oGE_AaAwLa@uGIoA?iAPu@`AuDnA}FT_ARyA?e@EyBYkI?eAA?', 'id': 20426}, 
+	{'i': 12, 'p': 'm|yvIyhilG@?@eH?mEAwCD{AXqBD_B_@{@_@MYDe@k@]y@cJsWSg@O{@@A', 'id': 20873}, 
+	{'i': 13, 'p': 'ilzvIwgklGA@]}Ae@cB_@eAOY_AwCS_@U_@e@Kc@@yC\\wAZoAb@c@Xi@h@Y@[AcCsDwAgBa@c@?I', 'id': 20874}, 
+	{'i': 14, 'p': 'wk{vIa}klG?HyCuC{AsAUSU?YBUTMN_G~Lc@x@c@h@[Zi@b@YXUXMOKSi@Y_@KgGkFc@_@eD_DyIqGeAeAe@m@]k@DK', 'id': 20876}
+	]
+	
 if __name__ == "__main__":
 	# Login
 #	sres = send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % usr2token['V.Smirnov']})
-	sres = send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % usr2token['wialon']})
-	res = upload_wlp(sres['eid'], 'exchange/import_json')
-	ppp(res, "upload_wlp exchange/import_json")
+#	sres = send_post ({'svc': 'token/login', 'params': "{'token':'%s'}" % usr2token['wialon']}, host='wialon.rnc52.ru')
+	data = {'svc': 'token/login', 'params': {'token':'%s' % usr2token['wialon'] }}
+	b, sres = requesr (data, host = 'wialon.rnc52.ru')
+	print sres.keys()
+#	res = upload_wlp(sres['eid'], 'exchange/import_json')
+#	ppp(res, "upload_wlp exchange/import_json")
 	try:
-		DEBUG = True
+	#	DEBUG = True
 		usr = sres['au']
 		sid = sres['eid']
 		usid = sres['user']['id']
 		print "User: %s SID: %s UsId: %d" % (usr, sid, usid)
 		print "="*44
 		data ={'sid': sid}
+		import json_convertation as jsc
+		print jsc.pres(sres).keys()
+		# Просмотр сообщение (треков машин) 1126 1054
+		crtm = int (time.time())
+		data['svc'] = "messages/load_interval"
+		data['params'] = { "itemId": 1054, "timeFrom": (crtm -3600*24), "timeTo": crtm, "flags": 0, "flagsMask": 0xff00, "loadCount": 10000 }
+		print data
+		b, sres = requesr (data, host = 'wialon.rnc52.ru')
+		if b and sres.has_key('messages'):
+			for m in sres['messages']:
+				sm = jsc.pres(m)
+			#	print sm.keys()
+				print time.strftime("%Y-%m-%d %T\t", time.localtime(sm['t'])), sm['pos']
+			print	"count:", sres['count']
+		else:
+			print b, jsc.pres(sres)
+	#	print jsc.pres(sres)
+		print "ZZZZZZZZZZZZZZZZZ", data
+		'''
 		data['svc'] = 'core/get_hw_types'
 		data['params'] = { "filterType":"type", "filterValue":["mobile"], "includeType": True }
-		print "ZZZZZZZZZZZZZZZZZ", data
 		res = send_post(data)
 		ppp(res, data['svc'])
-		'''
 		print "="*44
 		''
 		data['svc'] = 'exchange/import_json'
@@ -174,8 +212,8 @@ if __name__ == "__main__":
 		data['svc'] = 'core/create_unit'
 		data['params'] = {"creatorId": usid,"name":"test_LLL","hwTypeId":"9","dataFlags":"257"}
 		res = send_post(data)
-		'''
 		ppp(res, data['svc'])
+		'''
 	except:
 		ppp(sres, 'send_post')
 		exc_type, exc_value = sys.exc_info()[:2]
