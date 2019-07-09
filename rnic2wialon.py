@@ -306,6 +306,41 @@ def	users_inn ():
 				'''
 	print "="*33, "users_inn"	########################
 
+def	check_phones ():
+	print	"Проверить и обновить SIM карты.\n\tcheck_phones", USER, usr2token.get(USER)
+	try:
+		data = {'svc': 'token/login', 'params': {'token':'%s' % usr2token[USER] }}
+		b, sres = twlp.requesr(data, host = HOST)
+
+		sid = sres['eid']
+		data = {'sid': sid, 'svc': 'core/search_items', 'params':{'spec':{'itemsType':'avl_unit','propName':'*','propValueMask':'*','sortType':'sys_name'},'force':1,'flags':-1,'from':0,'to':0}}
+		b, sres = twlp.requesr(data, host = HOST)
+		for item in sres['items']:
+			itemId = item['id']
+			gosnum = item['nm'].encode('UTF-8').strip()
+			sim_1 = item['ph'].encode('UTF-8')
+			sim_2 = item['ph2'].encode('UTF-8')
+			if sim_1 or sim_2:
+				adct = dbContr.get_dict ("SELECT id_att, autos, sim_1, sim_2 FROM atts WHERE device_id = -%s" % itemId)
+				if not adct:	continue
+				sims = []
+				if sim_1 != adct['sim_1']:
+		#			print	itemId, gosnum, sim_1, sim_2,
+		#			print	"\t>", adct['sim_1'], adct['sim_2'],
+					sims.append ("sim_1 = '%s'" % sim_1),
+				if sim_2 and sim_2 != adct['sim_2']:
+					sims.append ("sim_2 = '%s'" % sim_2)
+				if sims:
+				#	print	itemId, gosnum, sim_1, sim_2, ">\t", adct['autos'], adct['sim_1'], adct['sim_2'], ">\t", ", ".join(sims)
+					query = "UPDATE atts SET %s WHERE device_id = -%s" % (", ".join(sims), itemId)
+					print	query, dbContr.qexecute (query)
+		#			return
+				
+	except:
+		print 	"EXCEPT check_phones"
+		print	USER, usr2token.get(USER)
+		print	data, b, sres
+
 def	autos_inn ():
 	""" Поиск ТС имеющих ИНН. Если TS_in_work == True обновление atts.last_date & atts.bm_wtime	"""
 	print	'Поиск ТС имеющих ИНН\n\tUSER:', USER, '\tHOST:', HOST, '\tTS_in_work:', TS_in_work
@@ -470,6 +505,7 @@ def	outhelp ():
 	-a	Поиск ТС имеющих ИНН, проверка наличия в БД contracts и добавление (при необходимости)
 	-aw	Поиск ТС имеющих ИНН и обновление atts.last_date & atts.bm_wtime
 	-u	Поиск Организаций имеющих ИНН, проверка наличия ТС (добавление ИНН при необходимости)
+	-P	Проверить и обновить SIM карты
 	-U	USER = [wialon] or v.smirnov
 	-h	Настоящая справка.
 	"""
@@ -502,7 +538,7 @@ if __name__ == "__main__":
 	print "Start PID: %i\t" % os.getpid(), sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
 	is_exec = None
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'thuawpU:')
+		optlist, args = getopt.getopt(sys.argv[1:], 'thuawpPU:')
 		if not optlist:		outhelp()
 
 
@@ -513,6 +549,7 @@ if __name__ == "__main__":
 			if o[0] == '-t':	tests ()
 			if o[0] == '-u':	is_exec = 'users'
 			if o[0] == '-a':	is_exec = 'autos'
+			if o[0] == '-P':	is_exec = 'phones'
 			if o[0] == '-p':
 				FL_fix_pos = True		### UPDATE wialon.last_pos
 				dbWialon = dbtools.dbtools(DBDS['wialon'])
@@ -523,6 +560,7 @@ if __name__ == "__main__":
 			dbWorkt = dbtools.dbtools(DBDS['worktime']) #	worktime
 		#	init_work_ts (sttmr)
 		else:	dbWorkt = None
+		if is_exec == 'phones':	check_phones ()
 		if is_exec == 'autos':	autos_inn ()
 		if is_exec == 'users':	users_inn ()
 
