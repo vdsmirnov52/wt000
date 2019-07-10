@@ -365,7 +365,34 @@ gtables = [ 'V_PORTAL2_SAD_AVTOZ','V_PORTAL2_SAD_KAN','V_PORTAL2_SAD_LEN','V_POR
 
 import	getopt
 
-def	otest ():
+def	update_inn ():
+	""" Обновить записи в NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW	"""
+	dbo = dboracle()
+	dbrec = dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
+	query = "SELECT gosnum, marka, inn, bname FROM vrecv_ts WHERE inn IN (SELECT inn FROM org_desc WHERE bm_ssys = 131072 AND stat > 0)"
+	rows = dbrec.get_rows(query)
+	if not rows:	return
+	j = jnt = 0
+	for r in rows:
+		gosnum, marka, inn, bname = r
+		orow = dbo.get_row ("SELECT GOS_NOMER, MARKA, INN, NAME_OBJ FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE GOS_NOMER = '%s'" % gosnum)
+		if not orow:
+			print	"\tNot: %s\t%s\t%s" % (gosnum, marka, inn) , bname
+			jnt += 1
+			continue
+		MARKA, INN, NAME_OBJ = orow[1:]
+		if inn != int(INN):
+		#	print	"\tINN:", gosnum, marka, inn, bname, "<>", INN
+			query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW SET MARKA = '%s', INN = '%s', NAME_OBJ = '%s' WHERE GOS_NOMER = '%s'" % (marka, inn, bname, gosnum)
+			res = dbo.execute(query)
+			print query, res
+			if res:	j += 1
+		#	break
+	if jnt:
+		print "Нет %s записей"
+	print "Обновлено %s записей NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW" % j
+
+def	otest (swhere = None):
 	print "otest"
 	dbo = dboracle()
 	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_SNEG"	# Флаг начала уборки ROWID
@@ -373,10 +400,13 @@ def	otest ():
 
 #	query = "SELECT count(*) FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK WHERE IS_ACTUAL >1"
 #	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK ORDER BY TEVENT"
-	query = """DELETE FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE NAME_OBJ = 'МП"Сергачский автобус"'"""
+#	query = """DELETE FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE NAME_OBJ = 'МП"Сергачский автобус"'"""
 #	print query, dbo.execute (query)
 #	query = """SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE NAME_OBJ = 'МП"Сергачский автобус"'"""
-	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW"	# ORDER BY TEVENT"
+	swhere = "INN = 5256133168 "	# 5256021545
+	if swhere:
+		query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE %s" % swhere
+	else:	query = "SELECT * FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW"	# ORDER BY TEVENT"
 	print query
 	rows = dbo.get_rows (query)
 	print dbo.desc
@@ -403,6 +433,7 @@ def	outhelp():
 	-a	Передача данных о текущем местоположении ТС	Oracle: NS_UBORKA_SAD_PLOW
 	-d	Очистить Oracle:  NS_UBORKA_SAD_TREK
 	-c	Проверка статуса ТС 	Oracle:	NS_UBORKA_TEHNIKA
+	-o	Обновить записи в NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW
 	-h	Справка
 	-t	Тестирование обмена с БД Oracle 
 	"""
@@ -416,7 +447,7 @@ if __name__ == "__main__":
 	flasttm = r'/tmp/NS_UBORKA_SAD_TREK.lasttime'
 	foutjsn = r'/home/smirnov/MyTests/Wialon/data/territory-%s.json' % time.strftime("%Y%m%d", time.localtime(sttmr))
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'hdsagtc')
+		optlist, args = getopt.getopt(sys.argv[1:], 'hdsagtco')
 		for o in optlist:
 			if o[0] == '-h':	outhelp()
 			if o[0] == '-g':	sfunc = "get_territory"
@@ -424,6 +455,7 @@ if __name__ == "__main__":
 			if o[0] == '-a':	sfunc = "send_autos"
 			if o[0] == '-d':	sfunc = "del_trek"
 			if o[0] == '-c':	sfunc =	"check_tsnow"
+			if o[0] == '-o':	sfunc =	"update_inn"
 			if o[0] == '-t':	sfunc = otest()
 
 		dbo = dboracle()
@@ -456,6 +488,8 @@ if __name__ == "__main__":
 			print query, dbo.execute (query)
 		elif sfunc == "check_tsnow":
 			check_tsnow ()
+		elif sfunc == "update_inn":
+			update_inn ()
 		else:	outhelp()
 	except	SystemExit:	pass
 	except  getopt.GetoptError:	outhelp()
