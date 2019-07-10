@@ -541,7 +541,6 @@ if __name__ == "__main__":
 		optlist, args = getopt.getopt(sys.argv[1:], 'thuawpPU:')
 		if not optlist:		outhelp()
 
-
 		for o in optlist:
 			if o[0] == '-U':	USER = o[1]
 			if o[0] == '-w':	TS_in_work = True
