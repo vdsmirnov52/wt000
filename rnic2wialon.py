@@ -525,7 +525,7 @@ def	tests ():
 		for k in DBDS:
 			print "\t%s =>\t" % k,	DBDS[k],
 			dbi = dbtools.dbtools(DBDS[k])
-			if dbi:		print "\tOK"
+			if not dbi.last_error:		print "\tOK"
 	sys.exit()
 
 if __name__ == "__main__":
