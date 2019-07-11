@@ -97,6 +97,5 @@ if __name__ == '__main__':
 	for key, val in bases.iteritems():
 		print '%s\t"%s" >\t' % (key, val) ,
 		ddb = dbtools (val, 0)
-		if not ddb.last_error:
-			print 'OK'
+		if not ddb.last_error:		print 'OK'
 
