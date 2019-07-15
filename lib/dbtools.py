@@ -87,7 +87,7 @@ class   dbtools:
 
 if __name__ == '__main__':
 	bases = {
-#	'oo': 'host=localhost dbname=test port=5432 user=smirnov',
+#	'oo': 'host=localhost dbname=find_routes port=5432 user=smirnov',
 	'03': 'host=127.0.0.1 dbname=b03 port=5432 user=smirnov',
 	'vms_ws': 'host=10.40.25.176 dbname=vms_ws port=5432 user=vms',
 	'wtm': 'host=127.0.0.1 dbname=worktime port=5432 user=smirnov',

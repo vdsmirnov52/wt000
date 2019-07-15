@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import	os, sys, time
-import	json
-import	urllib2, random
+import json
+import sys
+import time
+import urllib2
 
 """
         curl -X GET "http://nnovbus.rnc52.ru/api/depots" -H "accept: application/json" -H "Authorization: Token 5eb103d95c204a87a27c74e4b8f6bae0"
@@ -102,6 +103,7 @@ def	api_nimbus (cmnd = 'user/token/check', token = 'Token 30e04452062e435a9b4874
 	print	"api_nimbus", boundary
 	print	url, token
 	"""
+	global res
 	url = HOST + cmnd
 	headers = {
 		'Accept': 'application/json',
@@ -174,7 +176,7 @@ def test ():
 
 if __name__ == "__main__":
 	'''
-	test ()
+	find_routes ()
 	get_stops ()
 	get_routes ()
 	get_depots ()

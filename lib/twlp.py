@@ -123,7 +123,7 @@ def	send_post (pdict = None, pfile = None, host = None):
 
 DEBUG = False
 URL =	r"http://wialon.rnc52.ru/wialon/ajax.html"
-usr2token = {	# //test-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
+usr2token = {	# //find_routes-wialon.rnc52.ru/login.html?access_type=-1	# Полный доступ
 	'wialon':	"1d5a4a6ab2bde440204e6bd1d53b3af88D19DFFEDD8F1FBCEAFCDAEEB21419C1B4C7A875",
 	'V.Smirnov':	"c5a76d06f77af04aa4c9fa0699d465c272899BB584F98F199F951746467AA85947F7A9F5",
 	}

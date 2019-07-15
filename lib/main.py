@@ -44,8 +44,8 @@ function init_users() {
 }
 function sel_users() {
 	if (document.myForm.whost.value == '') {
-		if (confirm('Не выбран Host!\\nВыбрать test-wialon.rnc52.ru ?')) {
-			document.myForm.whost.value = 'test-wialon.rnc52.ru';
+		if (confirm('Не выбран Host!\\nВыбрать find_routes-wialon.rnc52.ru ?')) {
+			document.myForm.whost.value = 'find_routes-wialon.rnc52.ru';
 			document.myForm.set_whost.value = document.myForm.whost.value;
 		} else	return
 	}
