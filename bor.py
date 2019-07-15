@@ -11,6 +11,7 @@ sys.path.insert(0, LIBRARY_DIR)
 
 # '''
 from nimbus import u8api_nimbus
+import  dbtools
 # '''
 
 TOKEN = 'Token 30e04452062e435a9b48740f19d56f45'
@@ -61,13 +62,13 @@ def is_flstop (depot_id, stop_id, stop_name):
 	
 def find_routes (depot_id = 128):
 	res = u8api_nimbus(cmnd = 'depot/%s/stops' % depot_id, token = TOKEN)
-	print res.keys()
-	print res['stops'][0].keys()
+	# print res.keys()
+	# print res['stops'][0].keys()
 	j = 0
 	for s in res.get('stops'):
 		stop_id = s.get('id')
-		# stop_name = s.get('n')
-		# print "%5d\t %s \t[ %s ]" % (stop_id, stop_name, s.get('d')),
+		stop_name = s.get('n')
+		print "%5d\t %s \t[ %s ]" % (stop_id, stop_name, s.get('d'))
 		get_panel(depot_id, stop_id)
 		'''
 		fls_dict = is_flstop (depot_id, stop_id, stop_name)
@@ -75,10 +76,44 @@ def find_routes (depot_id = 128):
 			# j += 1
 		if j > 11:  break
 		'''
-	for rout in ROUTES.keys():
-		print rout, ROUTES[rout]
 
+def update_data_route (dbgeo, dbrec):
+	if not ROUTES:  return
+	for rout in ROUTES.keys():
+		if not ROUTES[rout]:    continue
+		# Поиск ГосНомеров ТС
+		idd_list = []
+		for i in ROUTES[rout]:  idd_list.append("%s" % i)
+		rgosns = dbrec.get_rows("SELECT idd, gosnum, marka FROM recv_ts WHERE idd IN ('%s');" % "', '".join(idd_list))
+		if not rgosns:  return
+
+		gosns = []
+		for r in rgosns:
+			# idd2gosn[int(r[0])] = r[1]
+			gosns.append(r[1])
+
+		drout = dbgeo.get_dict("SELECT * FROM data_route WHERE organization_id = 2 AND title = '%s';" % rout)
+		print rout, ROUTES[rout],
+		if not drout:
+			query = """INSERT INTO data_route (title, organization_id) VALUES ('%s', 2); SELECT * FROM data_route WHERE organization_id = 2 AND title = '%s';""" % (rout, rout)
+			drout = dbgeo.get_dict(query)
+			# print query
+		route_id = drout.get('id')
+		query = "UPDATE data_transport SET route_id = %s WHERE organization_id = 2 AND number IN ('%s');" % (route_id, "', '".join(gosns))
+		print "\t", query, dbgeo.qexecute(query)
+
+	
 if __name__ == '__main__':
-	print 'Main bor'
+	print 'Поиск данных о наличии ТС на маршрутах (рейсах) МУП "Борское ПАП"'
+
+	dbrec = dbtools.dbtools('host=10.10.2.241 dbname=receiver port=5432 user=smirnov')
+	dbgeo = dbtools.dbtools('host=212.193.103.21 dbname=geonornc52ru port=5432 user=smirnov')
+
+	if not dbgeo or dbgeo.last_error:   sys.exit()
+	if not dbrec or dbrec.last_error:   sys.exit()
+	print 'Ok'
 	# print help(nimbus)
 	find_routes()
+	update_data_route(dbgeo, dbrec)
+
+	print '#'*22
