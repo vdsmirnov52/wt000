@@ -301,7 +301,7 @@ if __name__ == "__main__":
 #	puser_prp (sess)
 
 	sid = sess['eid']
-	DBID = dbtools.dbtools('host=127.0.0.1 dbname=find_routes port=5432 user=smirnov')
+	DBID = dbtools.dbtools('host=127.0.0.1 dbname=test port=5432 user=smirnov')
 	for usrid in [357, 373, 436]:	print	get_factory (sid, usrid)
 	'''
 	get_hw_types(sid, DBID)
