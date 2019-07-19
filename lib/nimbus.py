@@ -176,7 +176,7 @@ def test ():
 
 if __name__ == "__main__":
 	'''
-	find_routes ()
+	test ()
 	get_stops ()
 	get_routes ()
 	get_depots ()

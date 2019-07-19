@@ -60,7 +60,12 @@ def is_flstop (depot_id, stop_id, stop_name):
 	if fls_dict:    return fls_dict
 		# return fls_names
 	
-def find_routes (depot_id = 128):
+def routes_all_stops (depot_id = 128):
+	"""
+	Поиск маршрутов по ВСЕМ остановкам  Time ~ 3.52m
+	:param depot_id:
+	:return: ROUTES
+	"""
 	res = u8api_nimbus(cmnd = 'depot/%s/stops' % depot_id, token = TOKEN)
 	# print res.keys()
 	# print res['stops'][0].keys()
@@ -102,19 +107,41 @@ def update_data_route (dbgeo, dbrec):
 		query = "UPDATE data_transport SET route_id = %s WHERE organization_id = 2 AND number IN ('%s');" % (route_id, "', '".join(gosns))
 		print "\t", query, dbgeo.qexecute(query)
 
+
+def routes_end_stops (depot_id = 128):
+	"""
+	Поиск маршрутов по конечным остановкам  Time ~ 0.30m
+	:param depot_id:
+	:return: ROUTES
+	"""
+	res = u8api_nimbus(cmnd = 'depot/%s/routes' % depot_id, token = TOKEN)
+	routes = res.get('routes')
+	end_stops = []
+	for r in routes:
+		print r.get('n'), r.get('id'), r.get('u')
+		fs = r['st'][0]['id']
+		ls = r['st'][-1]['id']
+		if not fs in end_stops:     end_stops.append(fs)
+		if not ls in end_stops:     end_stops.append(ls)
+
+	print '#'*22, 'len(end_stops)', len(end_stops)
+	for sid in end_stops:
+		get_panel(depot_id, sid)
+		
 	
 if __name__ == '__main__':
 	print 'Поиск данных о наличии ТС на маршрутах (рейсах) МУП "Борское ПАП"'
 
-#	dbrec = dbtools.dbtools('host=10.10.2.241 dbname=receiver port=5432 user=smirnov')
-	dbrec = dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
+	dbrec = dbtools.dbtools('host=10.10.2.241 dbname=receiver port=5432 user=smirnov')
+	# dbrec = dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
 	dbgeo = dbtools.dbtools('host=212.193.103.21 dbname=geonornc52ru port=5432 user=smirnov')
 
 	if not dbgeo or dbgeo.last_error:   sys.exit()
 	if not dbrec or dbrec.last_error:   sys.exit()
 	print 'Ok'
 	# print help(nimbus)
-	find_routes()
+	# routes_all_stops()
+	routes_end_stops()
 	update_data_route(dbgeo, dbrec)
 
 	print '#'*22
