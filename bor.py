@@ -106,7 +106,8 @@ def update_data_route (dbgeo, dbrec):
 if __name__ == '__main__':
 	print 'Поиск данных о наличии ТС на маршрутах (рейсах) МУП "Борское ПАП"'
 
-	dbrec = dbtools.dbtools('host=10.10.2.241 dbname=receiver port=5432 user=smirnov')
+#	dbrec = dbtools.dbtools('host=10.10.2.241 dbname=receiver port=5432 user=smirnov')
+	dbrec = dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
 	dbgeo = dbtools.dbtools('host=212.193.103.21 dbname=geonornc52ru port=5432 user=smirnov')
 
 	if not dbgeo or dbgeo.last_error:   sys.exit()

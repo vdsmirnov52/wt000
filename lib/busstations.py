@@ -38,7 +38,8 @@ def	view_nimbus (request):
 	if request.has_key('this') and request['this'].strip():			this = request['this'].strip()
 	if request.has_key('token') and request['token'].strip():		token = request['token'].strip()
 	if request.has_key('depot') and request['depot'].strip().isdigit():     depot = request['depot'].strip()
-	if request.has_key('stop_id') and request['stop_id'].strip().isdigit(): stop_id = request['stop_id'].strip()
+#	if request.has_key('stop_id') and request['stop_id'].strip().isdigit(): stop_id = request['stop_id'].strip()
+	if request.has_key('stop_id') and request['stop_id'].strip().isdigit(): stop_id = '20421'
 	print	"""<body><form name='myForm' action='/cgi-bin/abus.cgi' method='post'><fieldset class='hidd'>
 	<input name='this' type='hidden' value='%s' /> 
 	<input name='token' type='hidden' value='%s' /> 
@@ -258,9 +259,12 @@ def	ajax (SCRIPT_NAME, request):
 					if k > curr_page * num_tr:
 						jl += 1
 					if jl == 0:	continue
+					sdtm = "%02d" % dtm
+					'''
 					if dtm < 10 and dtm >= 0:
 						sdtm = '&nbsp; %s' % dtm
 					else:	sdtm = str(dtm)
+					'''
 				#	if len (sname) > 26:
 					if len (koi_sname) > 12:
 						print "~trid_%02d|<td>%3s</td><td style='color: #880;'>%s</td><td colspan='2'><marquee behavior='alternate' scrollamount='1' scrolldelay='240' > %s </marquee></td>" % (
@@ -287,7 +291,7 @@ def	ajax (SCRIPT_NAME, request):
 #	<link rel='stylesheet' type='text/css' href='/css/font-awesome/css/font-awesome.min.css' />
 style =	"""
 	<style>
-	body	{width: 96px; height: 64px; padding:0; margin:0px; cursor: none; color: #880; padding:0px; margin:0px, line-height: 10px;}
+	body	{width: 98px; height: 64px; padding:0; margin:0px; cursor: none; color: #880; padding:0px; margin:0px, line-height: 10px;}
 	body	{font-family: 'MS Sans Serif',  serif; font-size: 8px; background-color: #000000;}
 	table	{line-height: 10px;}
 	.hidd   {padding: 0px; margin: 0px; border-style: hidden;}
@@ -316,7 +320,8 @@ def	main (request):
 	token = depot = stop_id = ''
 	if request.has_key('token') and request['token'].strip():		token = request['token'].strip()
 	if request.has_key('depot') and request['depot'].strip().isdigit():	depot = request['depot'].strip()
-	if request.has_key('stop_id') and request['stop_id'].strip().isdigit():	stop_id = request['stop_id'].strip()
+#	if request.has_key('stop_id') and request['stop_id'].strip().isdigit():	stop_id = request['stop_id'].strip()
+	if request.has_key('stop_id') and request['stop_id'].strip().isdigit():	stop_id = '20421'
 	if not (stop_id and stop_id.isdigit() and depot and depot.isdigit() and token and len(token) > 30):
 	#	print "main request", request
 		return  view_nimbus (request)
@@ -354,8 +359,8 @@ def	main (request):
 	<input name='jpage' type='hidden' value='0' />
 	</fieldset>""" % (token, depot, stop_id)
 	clock = '<i class="fa fa-clock-o" aria-hidden="true"></i>'
-	print	"""<table width="96" id="ptable" cellpadding="1" cellspacing="0" valign="top" >
-	<tr style='background-color: #004;'><td> № </td><td> м. </td><td> Куда </td><td align='right' id='curr_tm'> %s </td></tr>
+	print	"""<table width="98px" id="ptable" cellpadding="1" cellspacing="0" valign="top" >
+	<tr style='background-color: #004;'><td> № </td><td> м. </td><td> Куда </td><td align='right' id='curr_tm'> %s &nbsp; </td></tr>
 	""" % time.strftime("%H:%M", time.localtime (tm))
 	print	"<tr id='trid_01' style='color: #080;'><td>#</td><td>123</td><td colspan='2'><marquee behavior='scroll' scrollamount='1' scrolldelay='240' bgcolor=#000000>%s</marquee></td></tr>" % "Куда едем ???"
 	print	"<tr id='trid_02' style='color: #080;'><td colspan=4>##2</td></tr>"
