@@ -13,6 +13,7 @@ import	nimbus
 TOKENS = [
 	('30e04452062e435a9b48740f19d56f45', 'ПП МУП Борское ПАП'),
 	('5eb103d95c204a87a27c74e4b8f6bae0', 'ПП МУП Павловское ПАП'),
+	('4f4b994b468d4ac79b90c074da708904', 'ПП МУП Экспресс - Дзержинск'),
 	]
 '''
 так я получаю лист маршрутов 		http://212.193.103.21/cgi-bin/ajax.cgi?this=ajax&shstat=nimbus&cmd=depot/128/routes

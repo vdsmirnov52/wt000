@@ -1,0 +1,28 @@
+
+	SELECT gx, gy FROM oo_house WHERE street_id = 2403 AND gx > 0 AND gy > 0 AND house_num LIKE '111%'
+
+	scp -P 1212 vds@89.109.52.236:/home/vds/03/uhouse.list ./
+
+git push -u origin master
+git remote -v
+	origin  https://vdsmirnov52@github.com/vdsmirnov52/mmap.git
+
+http://212.193.103.21/cgi-bin
+	/var/www/cgi-bin/ === /usr/lib/cgi-bin/
+
+NumBus:
+	ПП МУП Экспресс - Дзержинск		111111	Token 4f4b994b468d4ac79b90c074da708904
+	ПП МУП Борское ПАП				Token 30e04452062e435a9b48740f19d56f45
+	ПП МУП Павловское ПАП - Павловский р-н	GfdkGF	Token 5eb103d95c204a87a27c74e4b8f6bae0
+	ПП МУП АПАТ Арзамасский			FGFN123
+
+	Token 5eb103d95c204a87a27c74e4b8f6bae0
+
+	curl -X GET "http://nnovbus.rnc52.ru/api/user/token/check" -H "accept: application/json" -H "Authorization: Token 5eb103d95c204a87a27c74e4b8f6bae0"
+
+	# Получить все хранилища, к которым пользователь имеет доступ {depot_id} [89, 67]
+	curl -X GET "http://nnovbus.rnc52.ru/api/depots" -H "accept: application/json" -H "Authorization: Token 5eb103d95c204a87a27c74e4b8f6bae0"
+	curl -X GET "http://nnovbus.rnc52.ru/api/depot/{depot_id}/stops" -H "accept: application/json" -H "Authorization: Token 5eb103d95c204a87a27c74e4b8f6bae0"	# Остановка
+	curl -X GET "http://nnovbus.rnc52.ru/api/depot/{depot_id}/routes" -H "accept: application/json" -H "Authorization: Token 5eb103d95c204a87a27c74e4b8f6bae0"	# Маршруты
+	curl -X GET "http://nnovbus.rnc52.ru/api/depot/{depot_id}/rides" -H "accept: application/json" -H "Authorization: Token 5eb103d95c204a87a27c74e4b8f6bae0"	# Поездки
+	curl -X GET "http://nnovbus.rnc52.ru/api/depot/{depot_id}/patterns" -H "accept: application/json" -H "Authorization: Token 5eb103d95c204a87a27c74e4b8f6bae0"	# Шаблоны
