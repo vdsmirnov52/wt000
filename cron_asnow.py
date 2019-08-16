@@ -1,5 +1,8 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
+"""	АнтиСнег (обновление данных)
+	0-59 * * * *    /home/smirnov/MyTests/Wialon/cron_asnow.py >> /home/smirnov/MyTests/log/cron_asnow.log
+"""
 
 import	sys, os, time
 import	math

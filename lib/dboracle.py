@@ -1,5 +1,8 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
+"""	Утилита crontab
+	Обмен данными с ИС МКУ ГЦГиА (БД Oracle)	АнтиСнег
+"""
 '''	v.smirnov@rnc52.ru	41Tvjlby
 	хост: geonn.grad-nn.ru	порт 1521
 	логин: RNITS		пароль WwX5W9
