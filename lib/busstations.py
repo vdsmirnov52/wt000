@@ -10,11 +10,12 @@ sys.path.insert(0, LIBRARY_DIR)
 import	dbtools
 import	nimbus
 
-TOKENS = [
+TOKENS = [	# Ключи NimBus
 	('30e04452062e435a9b48740f19d56f45', 'ПП МУП Борское ПАП'),
-	('5eb103d95c204a87a27c74e4b8f6bae0', 'ПП МУП Павловское ПАП'),
-	('4f4b994b468d4ac79b90c074da708904', 'ПП МУП Экспресс - Дзержинск'),
-	('fbe7170fb4954cfc93f9a9cf95ca0ac8', 'ПП МУП АПАТ Арзамасский'),
+	('5eb103d95c204a87a27c74e4b8f6bae0', 'ПП МУП Павловское ПАП'),		# Просрочен
+#	('4f4b994b468d4ac79b90c074da708904', 'ПП МУП Экспресс - Дзержинск'),	# Просрочен
+	('fbe7170fb4954cfc93f9a9cf95ca0ac8', 'ПП МУП АПАТ Арзамасский'),	# Просрочен
+	('420fb68950c3400e8e09446621793364', 'ПП МУП Экспресс - Дзержинск NEW'),
 	]
 '''
 так я получаю лист маршрутов 		http://212.193.103.21/cgi-bin/ajax.cgi?this=ajax&shstat=nimbus&cmd=depot/128/routes
@@ -103,30 +104,43 @@ def	view_nimbus (request):
 			'''
 			return
 		if depot and set_view == 'routes':
+			route_ids = []
 			cmnd = 'depot/%s/routes' % depot
 			print "cmnd:", cmnd, stime(curr_date)
 			res = nimbus.u8api_nimbus(cmnd, "Token " +token)
 			routes = res.get('routes')
 			#	['a', 'd', 'tt', 'tp', 'st', 'tm', 'u', 'isc', 'n', 'id']
 			for rrr in routes:
-			#	if not rrr['u']:	continue
-				print rrr['id'], rrr['n'], rrr['d'], rrr['a'],
+				'''
+				route_ids.append(rrr['id'])	# список маршрутов
+				'''
+				print rrr['id'], rrr['n'], '\t', rrr['d'], rrr['a'],
 				print "\ttm", rrr['tm'], stime (rrr['tm']),
 				print "\tisc", rrr['isc']
 				if not rrr['tt']:	continue
-				'''
-				print "\ttt",  rrr['tt'][0].keys()
-				'''
+				
+			#	print "\ttt",  rrr['tt'][0].keys()
+				
 				for rt in rrr['tt']:
 					if not rt['bid']:	continue
-					if not rt['u']:	continue
-					
-					print "\tbid: %s, id: %s, Unit id: %s" % (rt['bid'], rt['id'], rt['u'])
-				#	print (rt['d'])
+					if not rt['u']:		continue
+					print "\tbid: %s, id: %s, Unit id: %s" % (rt['bid'], rt['id'], rt['u']), 'd:', rt.get('d')
 			#		print time(rt['tm'])	# Last update UNIX time
+					
 			#	print "\tst", rrr['st']		# Описание трасс маршрута от первой до последней остановки
 			#	print "\tu", rrr['u']
-		###		print
+			print
+			'''
+		#	Развернутое описание каждого маршрута	
+			print 'route_ids', route_ids
+			for route_id in route_ids:
+				cmnd = 'depot/%s/route/%s' % (depot, route_id)
+				res = nimbus.u8api_nimbus(cmnd, "Token " +token)
+				print res['id'], '\tnum:', res['n'], '\t', res['d'], res['a'], res['tm']
+				print "\ttt",  res['tt']
+				print "\tst", res['st']
+				time.sleep(0.2)
+
 			cmnd = 'depot/%s/route/%s' % (depot, 3399)
 			print "cmnd:", cmnd
 			res = nimbus.u8api_nimbus(cmnd, "Token " +token)
@@ -138,6 +152,7 @@ def	view_nimbus (request):
 			print "\ttt",  res['tt']
 			print "\tst", res['st']
 			print "\tu", res['u']
+			'''
 			print "</pre>"
 			return
 		if depot:

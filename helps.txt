@@ -11,7 +11,7 @@ http://212.193.103.21/cgi-bin
 	/var/www/cgi-bin/ === /usr/lib/cgi-bin/
 
 NumBus:
-	ПП МУП Экспресс - Дзержинск		111111	Token 4f4b994b468d4ac79b90c074da708904
+	ПП МУП Экспресс - Дзержинск		pentium4	111111	Token 4f4b994b468d4ac79b90c074da708904
 	ПП МУП Борское ПАП			1111	Token 30e04452062e435a9b48740f19d56f45
 	ПП МУП Павловское ПАП - Павловский р-н	GfdkGF	Token 5eb103d95c204a87a27c74e4b8f6bae0
 	ПП МУП АПАТ Арзамасский			FGFN123	Token fbe7170fb4954cfc93f9a9cf95ca0ac8

@@ -106,6 +106,7 @@ def	parce_coordinates (pl, epsg_in = 'epsg:3857', epsg_out = 'epsg:4326', resln 
 	print '#'*22, pouts
 
 def	send_lines (starttm = None):
+	print "\t Отправить треки проезда уборочной техники"
 	asnow = dbtools.dbtools('host=127.0.0.1 dbname=anti_snow port=5432 user=smirnov')
 	if starttm and starttm > 0:
 		query = "SELECT id, tevent,  gosnum, quality, slines FROM to_send WHERE tevent > %d" % (starttm -180)
@@ -133,15 +134,17 @@ def	send_lines (starttm = None):
 		orditate = ',\n'.join(jord)
 		query = """INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK (id, tevent, color, IS_ACTUAL, GEOMETRY) VALUES (%d, %d, %s, 1, MDSYS.SDO_GEOMETRY(3002, 3857,NULL, MDSYS.SDO_ELEM_INFO_ARRAY(%s), MDSYS.SDO_ORDINATE_ARRAY (\n%s)))""" % (
 			rid, tevent, quality, info, orditate)
-		print query
+	#	print query
 		res = dbo.execute (query)
-#		if res:
-		print "DELETE", rid, asnow.qexecute ("DELETE FROM to_send WHERE id = %d" % rid)
+		if not res:	print	"Error\t", query
+#		print "DELETE", ris
+		# Зачистить отправленное в anti_snow
+		if not asnow.qexecute ("DELETE FROM to_send WHERE id = %d" % rid):	print	"Error\t",  "DELETE FROM to_send WHERE id = %d" % rid
 #		if j > 3:	break
 		j += 1
 	if tevent > 0:
 		query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_TREK SET IS_ACTUAL = 0 WHERE IS_ACTUAL > 0 AND tevent < %d" % (tevent - 4*3600)
-		print	query, dbo.execute (query)
+		if not dbo.execute (query):	print 	"Error\t", query
 """
 Марина
 4       [[[43.983135, 56.308678], [43.983223, 56.308998], [43.983902, 56.30986]], [[43.983273, 56.310425], [43.981812, 56.310699]], [[43.981567, 56.311954], [43.981636, 56.312218]], [[43.983513, 56.316311], [43.983246, 56.316727]]]
@@ -269,7 +272,7 @@ def	check_row (d, r):
 	#################	bu/temp_20180906.py
 
 def	send_autos ():
-	print	"send_autos", "#"*33
+	print	"\t Отправить координаты ТС"
 
 	dbrec = dbtools.dbtools('host=212.193.103.20 dbname=receiver port=5432 user=smirnov')
 	dbo = dboracle()
@@ -305,13 +308,14 @@ def	send_autos ():
 			if r[d.index('t')] <= list_autos[gosnum]:	continue
 			query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW SET tevent = %s, geometry = %s, marka='%s' WHERE gos_nomer = '%s'" % (r[d.index('t')], gpoint, marka, gosnum)
 		#	query = "UPDATE NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW SET tevent = %s, geometry = %s WHERE gos_nomer = '%s'" % (r[d.index('t')], gpoint, gosnum)
-			print query, dbo.execute(query)
+			if not dbo.execute(query):	print	"Error:\t", query
 		else:
 		#	print "INSERT"
 			query = "INSERT INTO NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW (tevent, geometry, gos_nomer, marka, inn, name_obj) VALUES (%s, %s, '%s', '%s', '%s', '%s')" % (
 			r[d.index('t')], gpoint, gosnum, marka, r[d.index('tinn')], r[d.index('bname')])
 		#	r[d.index('t')], gpoint, gosnum, r[d.index('marka')], r[d.index('tinn')], r[d.index('bname')])
-			print query, dbo.execute(query)
+		#	print query, dbo.execute(query)
+			if not dbo.execute(query):	print	"Error:\t", query
  
 	query = "DELETE FROM NNOVGOROD3785_UAG.NS_UBORKA_SAD_PLOW WHERE ID < 50"
 	print query, dbo.execute(query)
@@ -442,8 +446,24 @@ def	outhelp():
 	"""
 	sys.exit()
 
+def	lock_file(fname = r'/tmp/dboracle.lock'):
+	""" Монопольный доступ к файлу (lockfile) 
+	часто применяется когда нужно предотвратить запуск нескольких копий приложения, 
+	либо просто монопольный доступ на запись	"""
+	import	fcntl
+	_lock_file = open(fname, 'a+')
+	try:
+		fcntl.flock(_lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+	except	IOError:	return	None
+	return	_lock_file
+
 if __name__ == "__main__":
 	sttmr = int (time.time())
+	id_flock = lock_file()
+	if not id_flock:
+		print "Break lock_file", sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
+		sys.exit()
+
 	print "Start %i" % os.getpid(), sys.argv, time.strftime("%Y-%m-%d %T", time.localtime(sttmr))
 	sfunc = None
 	fout = sys.stdout
@@ -462,7 +482,11 @@ if __name__ == "__main__":
 			if o[0] == '-t':	sfunc = otest()
 
 		dbo = dboracle()
-		print "\t", sfunc
+#		print "dbo", dbo, dbo.last_error
+		if not dbo or dbo.last_error:
+			print "Can't connected fo dboracle"
+			sys.exit()
+	#	print "\t", sfunc
 
 		if sfunc == "get_territory":
 			print "foutjsn:\t", foutjsn
@@ -480,6 +504,7 @@ if __name__ == "__main__":
 				f = open (flasttm)
 				stm = f.readline().strip()
 				if stm.isdigit():	starttm = int (stm)
+				f.close()
 			if sttmr - starttm > 360:	starttm = sttmr -360
 			send_lines (starttm)
 			os.system ('echo %s > %s' % (int (time.time() -30), flasttm))
@@ -499,8 +524,8 @@ if __name__ == "__main__":
 	except:
 		exc_type, exc_value = sys.exc_info()[:2]
 		print "EXCEPT __main__:", exc_type, exc_value
-
-	print 	'#'*22, '\n'
+	id_flock.close()
+	print 	'#'*22, "dtime = %d \n" % (int(time.time()) - sttmr)
 	'''
 #	query = "SELECT %s FROM %s.%s" % ("%s.ora2geojson.sdo2geojson('select * from %s',ROWID, geometry)" % (prefix, 'NS_UBORKA_SAD_TREK'), prefix, 'NS_UBORKA_SAD_TREK')
 	query = "SELECT %s FROM %s.%s" % ('*', prefix, 'NS_UBORKA_CATEG')	# 'NS_UBORKA_SAD_TREK')

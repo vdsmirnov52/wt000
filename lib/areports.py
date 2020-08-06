@@ -43,7 +43,7 @@ def	opts_report (request):
 	print "~rmiddle|"	### Параметры поиска"
 #	print time.mktime(time.strptime(sdate_end, "%d-%m-%Y"))
 
-	print """<link rel='stylesheet' type='text/css' href='/css/agro/calendar.css' /> """	#<script type='text/javascript' src='/js/agro/calendar.js'></script>"""
+#	print """<link rel='stylesheet' type='text/css' href='/css/agro/calendar.css' /> """	#<script type='text/javascript' src='/js/agro/calendar.js'></script>"""
 	print """<div class='list-group-item list-group-item-action active'><span class='tit'> <i class="fa fa-area-chart fa-lg" aria-hidden="true"></i> Параметры формирования отчета:</span><span class="float-right">
 		<i class="fa fa-times fa-lg" aria-hidden="true" onclick="$('#rmiddle').html('')"></i>&nbsp;</span></div>"""
 	print "<div id='div_opts' style=' height: 400px; overflow: auto;'>"
